@@ -18,6 +18,8 @@ static retro_environment_t environ_cb;
 static retro_input_poll_t input_poll_cb;
 static retro_input_state_t input_state_cb;
 
+float frame_time = 0;
+
 static void fallback_log(enum retro_log_level level, const char *fmt, ...)
 {
    (void)level;
@@ -117,6 +119,11 @@ void retro_reset(void)
    game_reset();
 }
 
+static void frame_time_cb(retro_usec_t usec)
+{
+   frame_time = usec / 1000000.0;
+}
+
 void retro_run(void)
 {
    key_state_t ks;
@@ -128,7 +135,7 @@ void retro_run(void)
    ks.down = input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_DOWN);
    ks.left = input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_LEFT);
 
-   game_update(&ks);
+   game_update(frame_time, &ks);
    game_render();
 
    video_cb(frame_buf, SCREEN_WIDTH, SCREEN_HEIGHT, SCREEN_PITCH);
@@ -152,6 +159,9 @@ bool retro_load_game(const struct retro_game_info *info)
       logging.log(RETRO_LOG_INFO, "RGB565 is not supported.\n");
       return false;
    }
+
+   struct retro_frame_time_callback frame_cb = { frame_time_cb, 1000000 / 60 };
+   environ_cb(RETRO_ENVIRONMENT_SET_FRAME_TIME_CALLBACK, &frame_cb);
 
    (void)info;
    return true;

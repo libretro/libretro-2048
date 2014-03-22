@@ -37,7 +37,7 @@ void game_calculate_pitch(void);
 void game_init(uint16_t *frame_buf);
 void game_deinit(void);
 void game_reset(void);
-void game_update(key_state_t *new_ks);
+void game_update(float delta, key_state_t *new_ks);
 void game_render(void);
 
 #endif // GAME_H

@@ -51,12 +51,23 @@ static cell_t grid[GRID_SIZE];/* =
 };*/
 
 static int game_score = 0;
+static float frame_time = 0.016;
 
 static key_state_t old_ks = {0};
 
 static void set_source_rgb(cairo_t *ctx, int r, int g, int b)
 {
    cairo_set_source_rgb(ctx, r / 255.0, g / 255.0, b / 255.0);
+}
+
+static void set_source_rgba(cairo_t *ctx, int r, int g, int b, float a)
+{
+   cairo_set_source_rgba(ctx, r / 255.0, g / 255.0, b / 255.0, a);
+}
+
+static float lerp(float v0, float v1, float t)
+{
+   return v0 * (1 - t) + v1 * t;
 }
 
 static void move_tiles(void)
@@ -236,8 +247,10 @@ void game_reset(void)
    memset(&old_ks, 0, sizeof(old_ks));
 }
 
-void game_update(key_state_t *new_ks)
+void game_update(float delta, key_state_t *new_ks)
 {
+   frame_time = delta;
+
    handle_input(new_ks);
 
    if (direction != DIR_NONE) {
