@@ -41,7 +41,8 @@ static enum
 {
    STATE_TITLE,
    STATE_PLAYING,
-   STATE_GAME_OVER
+   STATE_GAME_OVER,
+   STATE_WON
 } game_state;
 
 typedef struct cell {
@@ -166,6 +167,10 @@ static void move_tiles(void)
             next->origin = cell;
             cell->value = 0;
             game_score += 2 << next->value;
+
+            if (next->value == 11)
+               game_state = STATE_WON;
+
          } else if (farthest != cell) {
             farthest->value = cell->value;
             cell->value = 0;
@@ -214,9 +219,9 @@ static void handle_input(key_state_t *ks)
 {
    direction = DIR_NONE;
 
-   if (game_state == STATE_TITLE || game_state == STATE_GAME_OVER) {
+   if (game_state == STATE_TITLE || game_state == STATE_GAME_OVER || game_state == STATE_WON) {
       if (!ks->start && old_ks.start) {
-         game_state = STATE_PLAYING;
+         game_state = game_state == STATE_WON ? STATE_TITLE : STATE_PLAYING;
          reset_board();
       }
    } else if (game_state == STATE_PLAYING) {
@@ -431,6 +436,35 @@ static void render_game_over(void)
                       SCREEN_HEIGHT - TILE_SIZE * 2 - SPACING * 2, FONT_SIZE * 3 - SPACING * 2);
 }
 
+static void render_win(void)
+{
+   render_playing();
+   // bg
+   set_rgba(ctx, 250, 248, 239, 0.85);
+   fill_rectangle(ctx, 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
+
+   cairo_select_font_face(ctx, FONT, CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
+   cairo_set_font_size(ctx, FONT_SIZE * 2);
+
+   set_rgb(ctx, 185, 172, 159);
+   draw_text_centered(ctx, "You Win", 0, 0, SCREEN_WIDTH, TILE_SIZE*3);
+
+   cairo_select_font_face(ctx, FONT, CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
+   cairo_set_font_size(ctx, FONT_SIZE);
+
+   set_rgb(ctx, 185, 172, 159);
+   char tmp[100];
+
+   sprintf(tmp, "Score: %i", game_score);
+   draw_text_centered(ctx, tmp, 0, 0, SCREEN_WIDTH, TILE_SIZE*5);
+
+   set_rgb(ctx, 185, 172, 159);
+   fill_rectangle(ctx, TILE_SIZE / 2, TILE_SIZE * 4, SCREEN_HEIGHT - TILE_SIZE * 2, FONT_SIZE * 3);
+   cairo_set_source(ctx, color_lut[1]);
+   draw_text_centered(ctx, "PRESS START", TILE_SIZE / 2 + SPACING, TILE_SIZE * 4 + SPACING,
+                      SCREEN_HEIGHT - TILE_SIZE * 2 - SPACING * 2, FONT_SIZE * 3 - SPACING * 2);
+}
+
 void game_render(void)
 {
    if (game_state == STATE_PLAYING)
@@ -439,4 +473,6 @@ void game_render(void)
       render_title();
    else if (game_state == STATE_GAME_OVER)
       render_game_over();
+   else if (game_state == STATE_WON)
+      render_win();
 }
