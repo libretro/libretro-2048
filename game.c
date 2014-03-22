@@ -65,6 +65,12 @@ static void set_source_rgba(cairo_t *ctx, int r, int g, int b, float a)
    cairo_set_source_rgba(ctx, r / 255.0, g / 255.0, b / 255.0, a);
 }
 
+static void filled_rectangle(cairo_t *ctx, int x, int y, int w, int h)
+{
+   cairo_rectangle(ctx, x, y, w, h);
+   cairo_fill(ctx);
+}
+
 static float lerp(float v0, float v1, float t)
 {
    return v0 * (1 - t) + v1 * t;
@@ -263,26 +269,23 @@ void game_render(void)
 {
    // bg
    set_source_rgb(ctx, 250, 248, 239);
-   cairo_rectangle(ctx, 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
-   cairo_fill(ctx);
+   filled_rectangle(ctx, 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
 
    // grid bg
    set_source_rgb(ctx, 185, 172, 159);
-   cairo_rectangle(ctx, SPACING, BOARD_OFFSET_Y, BOARD_WIDTH, BOARD_WIDTH);
-   cairo_fill(ctx);
+   filled_rectangle(ctx, SPACING, BOARD_OFFSET_Y, BOARD_WIDTH, BOARD_WIDTH);
 
    // score bg
    set_source_rgb(ctx, 185, 172, 159);
-   cairo_rectangle(ctx, SPACING, SPACING, TILE_SIZE*2+SPACING*2, TILE_SIZE);
-   cairo_fill(ctx);
+   filled_rectangle(ctx, SPACING, SPACING, TILE_SIZE*2+SPACING*2, TILE_SIZE);
 
    // best bg
    set_source_rgb(ctx, 185, 172, 159);
-   cairo_rectangle(ctx, TILE_SIZE*2+SPACING*4, SPACING, TILE_SIZE*2+SPACING*2, TILE_SIZE);
-   cairo_fill(ctx);
+   filled_rectangle(ctx, TILE_SIZE*2+SPACING*4, SPACING, TILE_SIZE*2+SPACING*2, TILE_SIZE);
 
    cairo_text_extents_t extents;
    cairo_select_font_face(ctx, FONT, CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
+   cairo_set_font_size(ctx, FONT_SIZE);
 
    // score title
    cairo_set_source(ctx, color_lut[1]);
@@ -313,9 +316,7 @@ void game_render(void)
    cairo_move_to(ctx,  TILE_SIZE*2+SPACING*5, SPACING * 5 + extents.height);
    cairo_show_text(ctx, tmp);
 
-
    cairo_select_font_face(ctx, FONT, CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
-   cairo_set_font_size(ctx, FONT_SIZE);
 
    int ty = BOARD_OFFSET_Y + SPACING;
 
@@ -325,10 +326,17 @@ void game_render(void)
       for (int col = 0; col < 4; col++) {
          cell_t index = grid[row * 4 + col];
          cairo_set_source(ctx, color_lut[index.value]);
-         cairo_rectangle(ctx, tx, ty, TILE_SIZE, TILE_SIZE);
-         cairo_fill(ctx);
+         filled_rectangle(ctx, tx, ty, TILE_SIZE, TILE_SIZE);
 
          if (index.value) {
+
+            if (index.value < 6) // one or two digits
+               cairo_set_font_size(ctx, FONT_SIZE * 2.0);
+            else if (index.value < 10) // three digits
+               cairo_set_font_size(ctx, FONT_SIZE * 1.5);
+            else // four digits
+               cairo_set_font_size(ctx, FONT_SIZE);
+
             set_source_rgb(ctx, 119, 110, 101);
 
             cairo_text_extents(ctx, label_lut[index.value], &extents);
