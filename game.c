@@ -55,20 +55,37 @@ static float frame_time = 0.016;
 
 static key_state_t old_ks = {0};
 
-static void set_source_rgb(cairo_t *ctx, int r, int g, int b)
+static void set_rgb(cairo_t *ctx, int r, int g, int b)
 {
    cairo_set_source_rgb(ctx, r / 255.0, g / 255.0, b / 255.0);
 }
 
-static void set_source_rgba(cairo_t *ctx, int r, int g, int b, float a)
+static void set_rgba(cairo_t *ctx, int r, int g, int b, float a)
 {
    cairo_set_source_rgba(ctx, r / 255.0, g / 255.0, b / 255.0, a);
 }
 
-static void filled_rectangle(cairo_t *ctx, int x, int y, int w, int h)
+static void fill_rectangle(cairo_t *ctx, int x, int y, int w, int h)
 {
    cairo_rectangle(ctx, x, y, w, h);
    cairo_fill(ctx);
+}
+
+static void draw_text(cairo_t *ctx, const char *utf8, int x, int y)
+{
+   cairo_move_to(ctx, x, y);
+   cairo_show_text(ctx, utf8);
+}
+
+static void draw_text_centered(cairo_t *ctx, const char *utf8, int x, int y, int w, int h)
+{
+   cairo_text_extents_t extents;
+   cairo_text_extents(ctx, utf8, &extents);
+
+   double font_off_y = h ? extents.height / 2.0 + h / 2.0 : extents.height;
+   double font_off_x = w ? w / 2.0 - extents.width / 2.0 : 0.0;
+
+   draw_text(ctx, utf8, x + font_off_x, y + font_off_y);
 }
 
 static float lerp(float v0, float v1, float t)
@@ -268,53 +285,45 @@ void game_update(float delta, key_state_t *new_ks)
 void game_render(void)
 {
    // bg
-   set_source_rgb(ctx, 250, 248, 239);
-   filled_rectangle(ctx, 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
+   set_rgb(ctx, 250, 248, 239);
+   fill_rectangle(ctx, 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
 
    // grid bg
-   set_source_rgb(ctx, 185, 172, 159);
-   filled_rectangle(ctx, SPACING, BOARD_OFFSET_Y, BOARD_WIDTH, BOARD_WIDTH);
+   set_rgb(ctx, 185, 172, 159);
+   fill_rectangle(ctx, SPACING, BOARD_OFFSET_Y, BOARD_WIDTH, BOARD_WIDTH);
 
    // score bg
-   set_source_rgb(ctx, 185, 172, 159);
-   filled_rectangle(ctx, SPACING, SPACING, TILE_SIZE*2+SPACING*2, TILE_SIZE);
+   set_rgb(ctx, 185, 172, 159);
+   fill_rectangle(ctx, SPACING, SPACING, TILE_SIZE*2+SPACING*2, TILE_SIZE);
 
    // best bg
-   set_source_rgb(ctx, 185, 172, 159);
-   filled_rectangle(ctx, TILE_SIZE*2+SPACING*4, SPACING, TILE_SIZE*2+SPACING*2, TILE_SIZE);
+   set_rgb(ctx, 185, 172, 159);
+   fill_rectangle(ctx, TILE_SIZE*2+SPACING*4, SPACING, TILE_SIZE*2+SPACING*2, TILE_SIZE);
 
-   cairo_text_extents_t extents;
    cairo_select_font_face(ctx, FONT, CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
    cairo_set_font_size(ctx, FONT_SIZE);
 
    // score title
    cairo_set_source(ctx, color_lut[1]);
-   cairo_text_extents(ctx, "SCORE", &extents);
-   cairo_move_to(ctx,  SPACING*2, SPACING * 2 + extents.height);
-   cairo_show_text(ctx, "SCORE");
+   draw_text_centered(ctx, "SCORE", SPACING*2, SPACING * 2, 0, 0);
 
    // best title
    cairo_set_source(ctx, color_lut[1]);
-   cairo_text_extents(ctx, "BEST", &extents);
-   cairo_move_to(ctx,  TILE_SIZE*2+SPACING*5, SPACING * 2 + extents.height);
-   cairo_show_text(ctx, "BEST");
+   draw_text_centered(ctx, "BEST", TILE_SIZE*2+SPACING*5, SPACING*2, 0, 0);
 
    char tmp[10] = {0};
    cairo_set_font_size(ctx, FONT_SIZE * 2);
 
    // score value
-   sprintf(tmp, "%7i", game_score);
+   sprintf(tmp, "%i", game_score % 1000000);
    cairo_set_source(ctx, color_lut[1]);
-   cairo_text_extents(ctx, tmp, &extents);
-   cairo_move_to(ctx,  SPACING*2, SPACING * 5 + extents.height);
-   cairo_show_text(ctx, tmp);
+
+   draw_text_centered(ctx, tmp, SPACING*2, SPACING * 5, TILE_SIZE*2, 0);
 
    // best value
-   sprintf(tmp, "%7i", 0);
+   sprintf(tmp, "%i", 0 % 1000000);
    cairo_set_source(ctx, color_lut[1]);
-   cairo_text_extents(ctx, tmp, &extents);
-   cairo_move_to(ctx,  TILE_SIZE*2+SPACING*5, SPACING * 5 + extents.height);
-   cairo_show_text(ctx, tmp);
+   draw_text_centered(ctx, tmp, TILE_SIZE*2+SPACING*5, SPACING * 5, TILE_SIZE*2, 0);
 
    cairo_select_font_face(ctx, FONT, CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
 
@@ -326,7 +335,7 @@ void game_render(void)
       for (int col = 0; col < 4; col++) {
          cell_t index = grid[row * 4 + col];
          cairo_set_source(ctx, color_lut[index.value]);
-         filled_rectangle(ctx, tx, ty, TILE_SIZE, TILE_SIZE);
+         fill_rectangle(ctx, tx, ty, TILE_SIZE, TILE_SIZE);
 
          if (index.value) {
 
@@ -337,16 +346,8 @@ void game_render(void)
             else // four digits
                cairo_set_font_size(ctx, FONT_SIZE);
 
-            set_source_rgb(ctx, 119, 110, 101);
-
-            cairo_text_extents(ctx, label_lut[index.value], &extents);
-
-            int font_off_y = extents.height/2.0 + TILE_SIZE/2.0;
-            int font_off_x = TILE_SIZE/2.0 - extents.width/2.0;
-
-            cairo_move_to(ctx, tx + font_off_x, ty + font_off_y);
-
-            cairo_show_text(ctx, label_lut[index.value]);
+            set_rgb(ctx, 119, 110, 101);
+            draw_text_centered(ctx, label_lut[index.value], tx, ty, TILE_SIZE, TILE_SIZE);
          }
 
          tx += TILE_SIZE + SPACING;
