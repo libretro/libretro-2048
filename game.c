@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdarg.h>
+#include <time.h>
 
 #include <cairo/cairo.h>
 
@@ -183,7 +184,7 @@ static void add_tile(void) {
    }
 
    if (j)
-      empty[random() % j]->value = (random() / RAND_MAX) < 0.9 ? 1 : 2;
+      empty[rand() % j]->value = (rand() / RAND_MAX) < 0.9 ? 1 : 2;
    else
       puts("Game Over!");
       //logging.log(RETRO_LOG_INFO, "Game Over!");
@@ -212,6 +213,8 @@ void game_calculate_pitch(void)
 
 void game_init(uint16_t *frame_buf)
 {
+   srand(time(NULL));
+
    surface = cairo_image_surface_create_for_data(
             (unsigned char*)frame_buf, CAIRO_FORMAT_RGB16_565, SCREEN_WIDTH, SCREEN_HEIGHT,
             SCREEN_PITCH);
