@@ -36,13 +36,19 @@ static enum
    DIR_LEFT
 } direction;
 
-static int grid[GRID_SIZE] =
+typedef struct cell {
+   int value;
+   int grid_x, grid_y;
+   struct cell *origin;
+} cell_t;
+
+static cell_t grid[GRID_SIZE];/* =
 {
    0, 0, 0, 0,
    0, 0, 0, 0,
    0, 0, 0, 0,
    0, 0, 0, 0
-};
+};*/
 
 static int game_score = 0;
 
@@ -97,12 +103,12 @@ static void move_tiles(void)
    for (int row = row_begin; row != row_end; row += row_inc) {
       for (int col = col_begin; col != col_end; col += col_inc) {
 
-         int *cell = &grid[row * 4 + col];
-         if (!*cell)
+         cell_t *cell = &grid[row * 4 + col];
+         if (!cell->value)
             continue;
 
-         int *farthest;
-         int *next = cell;
+         cell_t *farthest;
+         cell_t *next = cell;
 
          int new_row = row , new_col = col;
 
@@ -116,33 +122,34 @@ static void move_tiles(void)
                break;
 
             next = &grid[new_row * 4 + new_col];
-         } while (!*next);
+         } while (!next->value);
 
          // TODO: check for multiple merges (only one allowed)
-         if (*next && *next == *cell && next != cell) {
-            *next = *cell + 1;
-            *cell = 0;
-            game_score += 2 << *next;
+         if (next->value && next->value == cell->value && next != cell) {
+            next->value = cell->value + 1;
+            next->origin = cell;
+            cell->value = 0;
+            game_score += 2 << next->value;
          } else if (farthest != cell) {
-            *farthest = *cell;
-            *cell = 0;
+            farthest->value = cell->value;
+            cell->value = 0;
          }
       }
    }
 }
 
 static void add_tile(void) {
-   int *empty[GRID_SIZE];
+   cell_t *empty[GRID_SIZE];
 
    int j = 0;
    for (int i = 0; i < GRID_SIZE; i++) {
       empty[j] = NULL;
-      if (!grid[i])
+      if (!grid[i].value)
          empty[j++] = &grid[i];
    }
 
    if (j)
-      *empty[random() % j] = 1;
+      empty[random() % j]->value = (random() / RAND_MAX) < 0.9 ? 1 : 2;
    else
       puts("Game Over!");
       //logging.log(RETRO_LOG_INFO, "Game Over!");
@@ -214,7 +221,18 @@ void game_deinit(void)
 void game_reset(void)
 {
    game_score = 0;
-   memset(&grid, 0, sizeof(grid));
+
+   for (int row = 0; row < 4; row++) {
+      for (int col = 0; col < 4; col++) {
+         grid[row * 4 + col] = (cell_t) {
+            .grid_y = row,
+            .grid_x = col,
+            .value = 0,
+            .origin = NULL
+         };
+      }
+   }
+
    memset(&old_ks, 0, sizeof(old_ks));
 }
 
@@ -292,22 +310,22 @@ void game_render(void)
       int tx = SPACING * 2;
 
       for (int col = 0; col < 4; col++) {
-         int index = grid[row * 4 + col];
-         cairo_set_source(ctx, color_lut[index]);
+         cell_t index = grid[row * 4 + col];
+         cairo_set_source(ctx, color_lut[index.value]);
          cairo_rectangle(ctx, tx, ty, TILE_SIZE, TILE_SIZE);
          cairo_fill(ctx);
 
-         if (index) {
+         if (index.value) {
             set_source_rgb(ctx, 119, 110, 101);
 
-            cairo_text_extents(ctx, label_lut[index], &extents);
+            cairo_text_extents(ctx, label_lut[index.value], &extents);
 
             int font_off_y = extents.height/2.0 + TILE_SIZE/2.0;
             int font_off_x = TILE_SIZE/2.0 - extents.width/2.0;
 
             cairo_move_to(ctx, tx + font_off_x, ty + font_off_y);
 
-            cairo_show_text(ctx, label_lut[index]);
+            cairo_show_text(ctx, label_lut[index.value]);
          }
 
          tx += TILE_SIZE + SPACING;
