@@ -9,47 +9,57 @@
 #include <cairo/cairo.h>
 
 
-enum {
-   SPACE = 5,
-   FONT_SIZE = 12,
-   TILE_SIZE = FONT_SIZE * 4,
-   NUM_TILES = 16,
-   BOARD_SIZE = SPACE + TILE_SIZE * 4 + SPACE * 3 + SPACE,
-   BOARD_OFFSET_Y = SPACE + TILE_SIZE + SPACE,
-   WIDTH  = SPACE + BOARD_SIZE + SPACE,
-   HEIGHT = SPACE + TILE_SIZE + SPACE + BOARD_SIZE + SPACE,
-};
-static const char *FONT = "cairo:monospace";
+#define SPACING    5
 
+#define FONT "cairo:monospace"
+#define FONT_SIZE 12
+#define TILE_SIZE (FONT_SIZE * 4)
 
-static int grid[NUM_TILES] = {
-   1, 0, 0, 1,
+#define GRID_WIDTH   4
+#define GRID_HEIGHT  4
+#define GRID_SIZE    (GRID_WIDTH * GRID_HEIGHT)
+
+#define BOARD_WIDTH  (SPACING + TILE_SIZE * GRID_WIDTH  + SPACING * (GRID_WIDTH  - 1) + SPACING)
+#define BOARD_HEIGHT (SPACING + TILE_SIZE * GRID_HEIGHT + SPACING * (GRID_HEIGHT - 1) + SPACING)
+
+#define BOARD_OFFSET_Y  SPACING + TILE_SIZE + SPACING
+
+#define SCREEN_WIDTH   SPACING + BOARD_WIDTH + SPACING
+#define SCREEN_HEIGHT  BOARD_OFFSET_Y + BOARD_HEIGHT + SPACING
+
+static int SCREEN_PITCH = 0;
+
+static enum
+{
+   DIR_NONE, DIR_UP, DIR_RIGHT, DIR_DOWN, DIR_LEFT
+} direction;
+
+static int grid[GRID_SIZE] =
+{
    0, 0, 0, 0,
    0, 0, 0, 0,
-   0, 0, 0, 1
+   0, 0, 0, 0,
+   0, 0, 0, 0
 };
 
 static uint16_t *frame_buf;
-static cairo_surface_t *surface;
+static cairo_surface_t *surface = NULL;
+static cairo_t *ctx = NULL;
 
-static struct retro_log_callback logging;
 
-static cairo_pattern_t *colors[13];
-static const char* labels[13] = {
+static cairo_pattern_t* color_lut[13];
+
+static const char* label_lut[13] =
+{
    "", "2", "4", "8",
    "16", "32", "64", "128",
    "256", "512", "1024", "2048",
    "XXX"
 };
 
-static int PITCH = 0;
+static int game_score = 0;
 
-static enum {
-   NODIR, UP, RIGHT, DOWN, LEFT
-} direction;
-
-static int score = 0;
-
+static struct retro_log_callback logging;
 static retro_video_refresh_t video_cb;
 static retro_audio_sample_t audio_cb;
 static retro_audio_sample_batch_t audio_batch_cb;
@@ -66,106 +76,103 @@ static void fallback_log(enum retro_log_level level, const char *fmt, ...)
    va_end(va);
 }
 
+static void set_source_rgb(cairo_t *ctx, int r, int g, int b)
+{
+   cairo_set_source_rgb(ctx, r / 255.0, g / 255.0, b / 255.0);
+}
 
 static void render_grid(void)
 {
-   cairo_t *ctx;
-
-   ctx = cairo_create(surface);
-
    // bg
-   cairo_set_source_rgb(ctx, 250 / 255.0, 248 / 255.0, 239 / 255.0);
-   cairo_rectangle(ctx, 0, 0, WIDTH, HEIGHT);
+   set_source_rgb(ctx, 250, 248, 239);
+   cairo_rectangle(ctx, 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
    cairo_fill(ctx);
 
    // grid bg
-   cairo_set_source_rgb(ctx, 185 / 255.0, 172 / 255.0, 159 / 255.0);
-   cairo_rectangle(ctx, SPACE, BOARD_OFFSET_Y, BOARD_SIZE, BOARD_SIZE);
+   set_source_rgb(ctx, 185, 172, 159);
+   cairo_rectangle(ctx, SPACING, BOARD_OFFSET_Y, BOARD_WIDTH, BOARD_WIDTH);
    cairo_fill(ctx);
 
 
 
    // score bg
-   cairo_set_source_rgb(ctx, 185 / 255.0, 172 / 255.0, 159 / 255.0);
-   cairo_rectangle(ctx, SPACE, SPACE, TILE_SIZE*2+SPACE*2, TILE_SIZE);
+   set_source_rgb(ctx, 185, 172, 159);
+   cairo_rectangle(ctx, SPACING, SPACING, TILE_SIZE*2+SPACING*2, TILE_SIZE);
    cairo_fill(ctx);
 
    // best bg
-   cairo_set_source_rgb(ctx, 185 / 255.0, 172 / 255.0, 159 / 255.0);
-   cairo_rectangle(ctx, TILE_SIZE*2+SPACE*4, SPACE, TILE_SIZE*2+SPACE*2, TILE_SIZE);
+   set_source_rgb(ctx, 185, 172, 159);
+   cairo_rectangle(ctx, TILE_SIZE*2+SPACING*4, SPACING, TILE_SIZE*2+SPACING*2, TILE_SIZE);
    cairo_fill(ctx);
 
    cairo_text_extents_t extents;
    cairo_select_font_face(ctx, FONT, CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
 
    // score title
-   cairo_set_source(ctx, colors[1]);
+   cairo_set_source(ctx, color_lut[1]);
    cairo_text_extents(ctx, "SCORE", &extents);
-   cairo_move_to(ctx,  SPACE*2, SPACE * 2 + extents.height);
+   cairo_move_to(ctx,  SPACING*2, SPACING * 2 + extents.height);
    cairo_show_text(ctx, "SCORE");
 
    // best title
-   cairo_set_source(ctx, colors[1]);
+   cairo_set_source(ctx, color_lut[1]);
    cairo_text_extents(ctx, "BEST", &extents);
-   cairo_move_to(ctx,  TILE_SIZE*2+SPACE*5, SPACE * 2 + extents.height);
+   cairo_move_to(ctx,  TILE_SIZE*2+SPACING*5, SPACING * 2 + extents.height);
    cairo_show_text(ctx, "BEST");
 
    char tmp[10] = {0};
    cairo_set_font_size(ctx, FONT_SIZE * 2);
 
    // score value
-   sprintf(tmp, "%7i", score);
-   cairo_set_source(ctx, colors[1]);
+   sprintf(tmp, "%7i", game_score);
+   cairo_set_source(ctx, color_lut[1]);
    cairo_text_extents(ctx, tmp, &extents);
-   cairo_move_to(ctx,  SPACE*2, SPACE * 5 + extents.height);
+   cairo_move_to(ctx,  SPACING*2, SPACING * 5 + extents.height);
    cairo_show_text(ctx, tmp);
 
    // best value
    sprintf(tmp, "%7i", 0);
-   cairo_set_source(ctx, colors[1]);
+   cairo_set_source(ctx, color_lut[1]);
    cairo_text_extents(ctx, tmp, &extents);
-   cairo_move_to(ctx,  TILE_SIZE*2+SPACE*5, SPACE * 5 + extents.height);
+   cairo_move_to(ctx,  TILE_SIZE*2+SPACING*5, SPACING * 5 + extents.height);
    cairo_show_text(ctx, tmp);
 
 
    cairo_select_font_face(ctx, FONT, CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
    cairo_set_font_size(ctx, FONT_SIZE);
 
-   int ty = BOARD_OFFSET_Y + SPACE;
+   int ty = BOARD_OFFSET_Y + SPACING;
 
    for (int row = 0; row < 4; row++) {
-      int tx = SPACE * 2;
+      int tx = SPACING * 2;
 
       for (int col = 0; col < 4; col++) {
          int index = grid[row * 4 + col];
-         cairo_set_source(ctx, colors[index]);
+         cairo_set_source(ctx, color_lut[index]);
          cairo_rectangle(ctx, tx, ty, TILE_SIZE, TILE_SIZE);
          cairo_fill(ctx);
 
          if (index) {
-            cairo_set_source_rgb(ctx, 119 / 255.0, 110 / 255.0, 101 / 255.0);
+            set_source_rgb(ctx, 119, 110, 101);
 
-
-            cairo_text_extents(ctx, labels[index], &extents);
+            cairo_text_extents(ctx, label_lut[index], &extents);
 
             int font_off_y = extents.height/2.0 + TILE_SIZE/2.0;
             int font_off_x = TILE_SIZE/2.0 - extents.width/2.0;
 
             cairo_move_to(ctx, tx + font_off_x, ty + font_off_y);
 
-            cairo_show_text(ctx, labels[index]);
+            cairo_show_text(ctx, label_lut[index]);
          }
 
-         tx += TILE_SIZE + SPACE;
+         tx += TILE_SIZE + SPACING;
       }
-      ty += TILE_SIZE + SPACE;
+      ty += TILE_SIZE + SPACING;
    }
 
    cairo_surface_flush(surface);
 
-   cairo_destroy(ctx);
 
-   video_cb(frame_buf, WIDTH, HEIGHT, PITCH);
 }
 
 static void update_input(void)
@@ -175,7 +182,7 @@ static void update_input(void)
 
    input_poll_cb();
 
-   direction = NODIR;
+   direction = DIR_NONE;
 
    up = input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_UP);
    right = input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_RIGHT);
@@ -183,13 +190,13 @@ static void update_input(void)
    left = input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_LEFT);
 
    if (!up && last_up)
-      direction = UP;
+      direction = DIR_UP;
    else if (!right && last_right)
-      direction = RIGHT;
+      direction = DIR_RIGHT;
    else if (!down && last_down)
-      direction = DOWN;
+      direction = DIR_DOWN;
    else if (!left && last_left)
-      direction = LEFT;
+      direction = DIR_LEFT;
 
    last_up = up;
    last_right = right;
@@ -202,17 +209,20 @@ static void move_tiles(void)
    int vec_x, vec_y;
 
    switch (direction) {
-      case UP:
+      case DIR_UP:
          vec_x = 0; vec_y = -1;
          break;
-      case DOWN:
+      case DIR_DOWN:
          vec_x = 0; vec_y = 1;
          break;
-      case RIGHT:
+      case DIR_RIGHT:
          vec_x = 1; vec_y = 0;
          break;
-      case LEFT:
+      case DIR_LEFT:
          vec_x = -1; vec_y = 0;
+         break;
+      default:
+         return;
          break;
    }
 
@@ -246,12 +256,9 @@ static void move_tiles(void)
          int *next = cell;
 
          int new_row = row , new_col = col;
-         int farthest_row, farthest_col;
 
          do {
             farthest = next;
-            farthest_row = new_row;
-            farthest_col = new_col;
 
             new_row += vec_y;
             new_col += vec_x;
@@ -266,7 +273,7 @@ static void move_tiles(void)
          if (*next && *next == *cell && next != cell) {
             *next = *cell + 1;
             *cell = 0;
-            score += 2 << *next;
+            game_score += 2 << *next;
          } else if (farthest != cell) {
             *farthest = *cell;
             *cell = 0;
@@ -276,10 +283,10 @@ static void move_tiles(void)
 }
 
 static void add_tile(void) {
-   int *empty[NUM_TILES];
+   int *empty[GRID_SIZE];
 
    int j = 0;
-   for (int i = 0; i < NUM_TILES; i++) {
+   for (int i = 0; i < GRID_SIZE; i++) {
       empty[j] = NULL;
       if (!grid[i])
          empty[j++] = &grid[i];
@@ -293,31 +300,32 @@ static void add_tile(void) {
 
 void retro_init(void)
 {
-   PITCH = cairo_format_stride_for_width(CAIRO_FORMAT_RGB16_565, WIDTH);
+   SCREEN_PITCH = cairo_format_stride_for_width(CAIRO_FORMAT_RGB16_565, SCREEN_WIDTH);
 
-   frame_buf = calloc(HEIGHT, PITCH);
+   frame_buf = calloc(SCREEN_HEIGHT, SCREEN_PITCH);
 
-   // XXX: last parameter might cause trouble in some systems
    surface = cairo_image_surface_create_for_data(
-            (unsigned char*)frame_buf, CAIRO_FORMAT_RGB16_565, WIDTH, HEIGHT,
-            PITCH);
+            (unsigned char*)frame_buf, CAIRO_FORMAT_RGB16_565, SCREEN_WIDTH, SCREEN_HEIGHT,
+            SCREEN_PITCH);
 
-   colors[0] = cairo_pattern_create_rgba(238 / 255.0, 228 / 255.0, 218 / 255.0, 0.35);
-   colors[1] = cairo_pattern_create_rgb(238 / 255.0, 228 / 255.0, 218 / 255.0);
+   ctx = cairo_create(surface);
 
-   colors[2] = cairo_pattern_create_rgb(237 / 255.0, 224 / 255.0, 200 / 255.0);
-   colors[3] = cairo_pattern_create_rgb(242 / 255.0, 177 / 255.0, 121 / 255.0);
-   colors[4] = cairo_pattern_create_rgb(245 / 255.0, 149 / 255.0, 99 / 255.0);
-   colors[5] = cairo_pattern_create_rgb(246 / 255.0, 124 / 255.0, 95 / 255.0);
-   colors[6] = cairo_pattern_create_rgb(246 / 255.0, 94 / 255.0, 59 / 255.0);
+   color_lut[0] = cairo_pattern_create_rgba(238 / 255.0, 228 / 255.0, 218 / 255.0, 0.35);
+   color_lut[1] = cairo_pattern_create_rgb(238 / 255.0, 228 / 255.0, 218 / 255.0);
+
+   color_lut[2] = cairo_pattern_create_rgb(237 / 255.0, 224 / 255.0, 200 / 255.0);
+   color_lut[3] = cairo_pattern_create_rgb(242 / 255.0, 177 / 255.0, 121 / 255.0);
+   color_lut[4] = cairo_pattern_create_rgb(245 / 255.0, 149 / 255.0, 99 / 255.0);
+   color_lut[5] = cairo_pattern_create_rgb(246 / 255.0, 124 / 255.0, 95 / 255.0);
+   color_lut[6] = cairo_pattern_create_rgb(246 / 255.0, 94 / 255.0, 59 / 255.0);
 
    // TODO: shadow
-   colors[7] = cairo_pattern_create_rgb(237 / 255.0, 207 / 255.0, 114 / 255.0);
-   colors[8] = cairo_pattern_create_rgb(237 / 255.0, 204 / 255.0, 97 / 255.0);
-   colors[9] = cairo_pattern_create_rgb(237 / 255.0, 200 / 255.0, 80 / 255.0);
-   colors[10] = cairo_pattern_create_rgb(237 / 255.0, 197 / 255.0, 63 / 255.0);
-   colors[11] = cairo_pattern_create_rgb(237 / 255.0, 194 / 255.0, 46 / 255.0);
-   colors[12] = cairo_pattern_create_rgb(60 / 255.0, 58 / 255.0, 50 / 255.0);
+   color_lut[7] = cairo_pattern_create_rgb(237 / 255.0, 207 / 255.0, 114 / 255.0);
+   color_lut[8] = cairo_pattern_create_rgb(237 / 255.0, 204 / 255.0, 97 / 255.0);
+   color_lut[9] = cairo_pattern_create_rgb(237 / 255.0, 200 / 255.0, 80 / 255.0);
+   color_lut[10] = cairo_pattern_create_rgb(237 / 255.0, 197 / 255.0, 63 / 255.0);
+   color_lut[11] = cairo_pattern_create_rgb(237 / 255.0, 194 / 255.0, 46 / 255.0);
+   color_lut[12] = cairo_pattern_create_rgb(60 / 255.0, 58 / 255.0, 50 / 255.0);
 
 //   add_tile();  add_tile();
 }
@@ -326,6 +334,17 @@ void retro_deinit(void)
 {
    free(frame_buf);
    frame_buf = NULL;
+
+   for (int i = 0; i < 13; i++) {
+      cairo_pattern_destroy(color_lut[i]);
+      color_lut[i] = NULL;
+   }
+
+   cairo_destroy(ctx);
+   cairo_surface_destroy(surface);
+
+   ctx     = NULL;
+   surface = NULL;
 }
 
 unsigned retro_api_version(void)
@@ -353,10 +372,10 @@ void retro_get_system_av_info(struct retro_system_av_info *info)
    info->timing.fps = 24.0;
    info->timing.sample_rate = 30000.0;
 
-   info->geometry.base_width   = WIDTH;
-   info->geometry.base_height  = HEIGHT;
-   info->geometry.max_width    = WIDTH;
-   info->geometry.max_height   = HEIGHT;
+   info->geometry.base_width   = SCREEN_WIDTH;
+   info->geometry.base_height  = SCREEN_HEIGHT;
+   info->geometry.max_width    = SCREEN_WIDTH;
+   info->geometry.max_height   = SCREEN_HEIGHT;
    info->geometry.aspect_ratio = 1;
 }
 
@@ -400,17 +419,18 @@ void retro_reset(void)
 {
 }
 
-
 void retro_run(void)
 {
    update_input();
 
-   if (direction != NODIR) {
+   if (direction != DIR_NONE) {
       move_tiles();
       add_tile();
    }
 
    render_grid();
+
+   video_cb(frame_buf, SCREEN_WIDTH, SCREEN_HEIGHT, SCREEN_PITCH);
 }
 
 bool retro_load_game(const struct retro_game_info *info)
