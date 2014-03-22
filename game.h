@@ -3,10 +3,9 @@
 
 #include <stdint.h>
 
-#define SPACING    5
-
 #define FONT "cairo:monospace"
-#define FONT_SIZE 12
+#define FONT_SIZE 20
+#define SPACING    (FONT_SIZE * 0.4)
 #define TILE_SIZE (FONT_SIZE * 4)
 
 #define GRID_WIDTH   4
