@@ -268,6 +268,9 @@ void game_reset(void)
    }
 
    memset(&old_ks, 0, sizeof(old_ks));
+
+   add_tile();
+   add_tile();
 }
 
 void game_update(float delta, key_state_t *new_ks)
