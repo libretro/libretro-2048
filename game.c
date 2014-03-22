@@ -37,19 +37,20 @@ static enum
    DIR_LEFT
 } direction;
 
+static enum
+{
+   STATE_TITLE,
+   STATE_PLAYING,
+   STATE_GAME_OVER
+} game_state;
+
 typedef struct cell {
    int value;
    int grid_x, grid_y;
    struct cell *origin;
 } cell_t;
 
-static cell_t grid[GRID_SIZE];/* =
-{
-   0, 0, 0, 0,
-   0, 0, 0, 0,
-   0, 0, 0, 0,
-   0, 0, 0, 0
-};*/
+static cell_t grid[GRID_SIZE];
 
 static int game_score = 0;
 static float frame_time = 0.016;
@@ -173,7 +174,8 @@ static void move_tiles(void)
    }
 }
 
-static void add_tile(void) {
+static void add_tile(void)
+{
    cell_t *empty[GRID_SIZE];
 
    int j = 0;
@@ -186,22 +188,47 @@ static void add_tile(void) {
    if (j)
       empty[rand() % j]->value = (rand() / RAND_MAX) < 0.9 ? 1 : 2;
    else
-      puts("Game Over!");
-      //logging.log(RETRO_LOG_INFO, "Game Over!");
+      game_state = STATE_GAME_OVER;
+}
+
+static void reset_board(void)
+{
+   game_score = 0;
+
+   for (int row = 0; row < 4; row++) {
+      for (int col = 0; col < 4; col++) {
+         grid[row * 4 + col] = (cell_t) {
+            .grid_y = row,
+            .grid_x = col,
+            .value = 0,
+            .origin = NULL
+         };
+      }
+   }
+
+   add_tile();
+   add_tile();
 }
 
 static void handle_input(key_state_t *ks)
 {
    direction = DIR_NONE;
 
-   if (!ks->up && old_ks.up)
-      direction = DIR_UP;
-   else if (!ks->right && old_ks.right)
-      direction = DIR_RIGHT;
-   else if (!ks->down && old_ks.down)
-      direction = DIR_DOWN;
-   else if (!ks->left && old_ks.left)
-      direction = DIR_LEFT;
+   if (game_state == STATE_TITLE || game_state == STATE_GAME_OVER) {
+      if (!ks->start && old_ks.start) {
+         game_state = STATE_PLAYING;
+         reset_board();
+      }
+   } else if (game_state == STATE_PLAYING) {
+      if (!ks->up && old_ks.up)
+         direction = DIR_UP;
+      else if (!ks->right && old_ks.right)
+         direction = DIR_RIGHT;
+      else if (!ks->down && old_ks.down)
+         direction = DIR_DOWN;
+      else if (!ks->left && old_ks.left)
+         direction = DIR_LEFT;
+   }
 
    old_ks = *ks;
 }
@@ -257,23 +284,9 @@ void game_deinit(void)
 
 void game_reset(void)
 {
-   game_score = 0;
-
-   for (int row = 0; row < 4; row++) {
-      for (int col = 0; col < 4; col++) {
-         grid[row * 4 + col] = (cell_t) {
-            .grid_y = row,
-            .grid_x = col,
-            .value = 0,
-            .origin = NULL
-         };
-      }
-   }
+   reset_board();
 
    memset(&old_ks, 0, sizeof(old_ks));
-
-   add_tile();
-   add_tile();
 }
 
 void game_update(float delta, key_state_t *new_ks)
@@ -288,7 +301,7 @@ void game_update(float delta, key_state_t *new_ks)
    }
 }
 
-void game_render(void)
+static void render_playing(void)
 {
    // bg
    set_rgb(ctx, 250, 248, 239);
@@ -323,7 +336,6 @@ void game_render(void)
    // score value
    sprintf(tmp, "%i", game_score % 1000000);
    cairo_set_source(ctx, color_lut[1]);
-
    draw_text_centered(ctx, tmp, SPACING*2, SPACING * 5, TILE_SIZE*2, 0);
 
    // best value
@@ -365,3 +377,66 @@ void game_render(void)
    cairo_surface_flush(surface);
 }
 
+static void render_title(void)
+{
+   // bg
+   set_rgb(ctx, 250, 248, 239);
+   fill_rectangle(ctx, 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
+
+   cairo_select_font_face(ctx, FONT, CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
+   cairo_set_font_size(ctx, FONT_SIZE * 5);
+
+   set_rgb(ctx, 185, 172, 159);
+   draw_text_centered(ctx, "2048", 0, 0, SCREEN_WIDTH, TILE_SIZE*3);
+
+
+   set_rgb(ctx, 185, 172, 159);
+   fill_rectangle(ctx, TILE_SIZE / 2, TILE_SIZE * 4, SCREEN_HEIGHT - TILE_SIZE * 2, FONT_SIZE * 3);
+
+   cairo_select_font_face(ctx, FONT, CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
+   cairo_set_font_size(ctx, FONT_SIZE);
+
+   cairo_set_source(ctx, color_lut[1]);
+   draw_text_centered(ctx, "PRESS START", TILE_SIZE / 2 + SPACING, TILE_SIZE * 4 + SPACING,
+                      SCREEN_HEIGHT - TILE_SIZE * 2 - SPACING * 2, FONT_SIZE * 3 - SPACING * 2);
+
+}
+
+static void render_game_over(void)
+{
+   render_playing();
+   // bg
+   set_rgba(ctx, 250, 248, 239, 0.85);
+   fill_rectangle(ctx, 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
+
+   cairo_select_font_face(ctx, FONT, CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
+   cairo_set_font_size(ctx, FONT_SIZE * 2);
+
+   set_rgb(ctx, 185, 172, 159);
+   draw_text_centered(ctx, "GAME OVER", 0, 0, SCREEN_WIDTH, TILE_SIZE*3);
+
+   cairo_select_font_face(ctx, FONT, CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
+   cairo_set_font_size(ctx, FONT_SIZE);
+
+   set_rgb(ctx, 185, 172, 159);
+   char tmp[100];
+
+   sprintf(tmp, "Score: %i", game_score);
+   draw_text_centered(ctx, tmp, 0, 0, SCREEN_WIDTH, TILE_SIZE*5);
+
+   set_rgb(ctx, 185, 172, 159);
+   fill_rectangle(ctx, TILE_SIZE / 2, TILE_SIZE * 4, SCREEN_HEIGHT - TILE_SIZE * 2, FONT_SIZE * 3);
+   cairo_set_source(ctx, color_lut[1]);
+   draw_text_centered(ctx, "PRESS START", TILE_SIZE / 2 + SPACING, TILE_SIZE * 4 + SPACING,
+                      SCREEN_HEIGHT - TILE_SIZE * 2 - SPACING * 2, FONT_SIZE * 3 - SPACING * 2);
+}
+
+void game_render(void)
+{
+   if (game_state == STATE_PLAYING)
+      render_playing();
+   else if (game_state == STATE_TITLE)
+      render_title();
+   else if (game_state == STATE_GAME_OVER)
+      render_game_over();
+}
