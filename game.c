@@ -338,12 +338,14 @@ void game_update(float delta, key_state_t *new_ks)
 
    handle_input(new_ks);
 
-   if (direction != DIR_NONE && move_tiles()) {
-      add_tile();
-   }
+   if (game_state == STATE_PLAYING) {
+      if (direction != DIR_NONE && move_tiles()) {
+         add_tile();
+      }
 
-   if (!matches_available() && !cells_available())
-      game_state = STATE_GAME_OVER;
+      if (!matches_available() && !cells_available())
+         game_state = STATE_GAME_OVER;
+   }
 }
 
 static void render_playing(void)
