@@ -45,10 +45,16 @@ static enum
    STATE_WON
 } game_state;
 
+typedef struct vector {
+   int x;
+   int y;
+} vector_t;
+
 typedef struct cell {
    int value;
-   int grid_x, grid_y;
-   struct cell *origin;
+   vector_t pos;
+   vector_t old_pos;
+   struct cell *source;
 } cell_t;
 
 static cell_t grid[GRID_SIZE];
@@ -139,6 +145,15 @@ static bool move_tiles(void)
 
    bool moved = false;
 
+   // clear source cell and save current position in the grid
+   for (int row = row_begin; row != row_end; row += row_inc) {
+      for (int col = col_begin; col != col_end; col += col_inc) {
+         cell_t *cell = &grid[row * 4 + col];
+         cell->old_pos = cell->pos;
+         cell->source = NULL;
+      }
+   }
+
    for (int row = row_begin; row != row_end; row += row_inc) {
       for (int col = col_begin; col != col_end; col += col_inc) {
 
@@ -164,9 +179,9 @@ static bool move_tiles(void)
          } while (!next->value);
 
          // TODO: check for multiple merges (only one allowed)
-         if (next->value && next->value == cell->value && next != cell) {
+         if (next->value && next->value == cell->value && next != cell && !next->source) {
             next->value = cell->value + 1;
-            next->origin = cell;
+            next->source = cell;
             cell->value = 0;
             game_score += 2 << next->value;
             moved = true;
@@ -241,10 +256,12 @@ static void reset_board(void)
    for (int row = 0; row < 4; row++) {
       for (int col = 0; col < 4; col++) {
          grid[row * 4 + col] = (cell_t) {
-            .grid_y = row,
-            .grid_x = col,
+            .pos = {
+               .x = col,
+               .y = row
+            },
             .value = 0,
-            .origin = NULL
+            .source = NULL
          };
       }
    }
