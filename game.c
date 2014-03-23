@@ -96,7 +96,7 @@ static float lerp(float v0, float v1, float t)
    return v0 * (1 - t) + v1 * t;
 }
 
-static void move_tiles(void)
+static bool move_tiles(void)
 {
    int vec_x, vec_y;
 
@@ -114,7 +114,7 @@ static void move_tiles(void)
          vec_x = -1; vec_y = 0;
          break;
       default:
-         return;
+         return false;
          break;
    }
 
@@ -136,6 +136,8 @@ static void move_tiles(void)
       row_end   = -1;
       row_inc   = -1;
    }
+
+   bool moved = false;
 
    for (int row = row_begin; row != row_end; row += row_inc) {
       for (int col = col_begin; col != col_end; col += col_inc) {
@@ -167,6 +169,7 @@ static void move_tiles(void)
             next->origin = cell;
             cell->value = 0;
             game_score += 2 << next->value;
+            moved = true;
 
             if (next->value == 11)
                game_state = STATE_WON;
@@ -174,9 +177,44 @@ static void move_tiles(void)
          } else if (farthest != cell) {
             farthest->value = cell->value;
             cell->value = 0;
+            moved = true;
          }
       }
    }
+
+   return moved;
+}
+
+static bool cells_available(void)
+{
+   for (int row = 0; row < GRID_HEIGHT; row++) {
+      for (int col = 0; col < GRID_WIDTH; col++) {
+         if (!grid[row * GRID_WIDTH + col].value)
+            return true;
+      }
+   }
+
+   return false;
+}
+
+static bool matches_available(void)
+{
+   for (int row = 0; row < GRID_HEIGHT; row++) {
+      for (int col = 0; col < GRID_WIDTH; col++) {
+         cell_t *cell = &grid[row * GRID_WIDTH + col];
+
+         if (!cell->value)
+            continue;
+
+         if ((col > 0 && grid[row * GRID_WIDTH + col - 1].value == cell->value) ||
+             (col < GRID_WIDTH - 1 && grid[row * GRID_WIDTH + col + 1].value == cell->value) ||
+             (row > 0 && grid[(row - 1) * GRID_WIDTH + col].value == cell->value) ||
+             (row < GRID_HEIGHT - 1 && grid[(row + 1) * GRID_WIDTH + col].value == cell->value))
+            return true;
+      }
+   }
+
+   return false;
 }
 
 static void add_tile(void)
@@ -300,10 +338,12 @@ void game_update(float delta, key_state_t *new_ks)
 
    handle_input(new_ks);
 
-   if (direction != DIR_NONE) {
-      move_tiles();
+   if (direction != DIR_NONE && move_tiles()) {
       add_tile();
    }
+
+   if (!matches_available() && !cells_available())
+      game_state = STATE_GAME_OVER;
 }
 
 static void render_playing(void)
