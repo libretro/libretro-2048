@@ -54,6 +54,7 @@ typedef struct cell {
    int value;
    vector_t pos;
    vector_t old_pos;
+   float ani_time;
    struct cell *source;
 } cell_t;
 
@@ -100,6 +101,12 @@ static void draw_text_centered(cairo_t *ctx, const char *utf8, int x, int y, int
 static float lerp(float v0, float v1, float t)
 {
    return v0 * (1 - t) + v1 * t;
+}
+
+static void grid_to_screen(vector_t pos, int *x, int *y)
+{
+   *x = SPACING * 2 + ((TILE_SIZE + SPACING) * pos.x);
+   *y = BOARD_OFFSET_Y + SPACING + ((TILE_SIZE + SPACING) * pos.y);
 }
 
 static bool move_tiles(void)
@@ -151,6 +158,7 @@ static bool move_tiles(void)
          cell_t *cell = &grid[row * 4 + col];
          cell->old_pos = cell->pos;
          cell->source = NULL;
+         cell->ani_time = 1;
       }
    }
 
@@ -178,10 +186,12 @@ static bool move_tiles(void)
             next = &grid[new_row * 4 + new_col];
          } while (!next->value);
 
-         // TODO: check for multiple merges (only one allowed)
+         // only tiles that have not been merged
          if (next->value && next->value == cell->value && next != cell && !next->source) {
             next->value = cell->value + 1;
             next->source = cell;
+            next->old_pos = cell->pos;
+            next->ani_time = 0;
             cell->value = 0;
             game_score += 2 << next->value;
             moved = true;
@@ -191,6 +201,8 @@ static bool move_tiles(void)
 
          } else if (farthest != cell) {
             farthest->value = cell->value;
+            farthest->old_pos = cell->pos;
+            farthest->ani_time = 0;
             cell->value = 0;
             moved = true;
          }
@@ -260,6 +272,11 @@ static void reset_board(void)
                .x = col,
                .y = row
             },
+            .old_pos = {
+               .x = col,
+               .y = row
+            },
+            .ani_time = 1,
             .value = 0,
             .source = NULL
          };
@@ -365,6 +382,42 @@ void game_update(float delta, key_state_t *new_ks)
    }
 }
 
+static void draw_tile(cairo_t *ctx, cell_t *cell)
+{
+   int x, y;
+
+   if (cell->value && cell->ani_time < 1/*(cell->pos.x != cell->old_pos.x || cell->pos.y != cell->old_pos.y)*/) {
+      int x1, y1;
+      int x2, y2;
+
+      grid_to_screen(cell->old_pos, &x1, &y1);
+      grid_to_screen(cell->pos, &x2, &y2);
+
+      x = lerp(x1, x2, cell->ani_time);
+      y = lerp(y1, y2, cell->ani_time);
+
+      cell->ani_time += frame_time * TILE_ANIM_SPEED;
+   } else {
+      grid_to_screen(cell->pos, &x, &y);
+   }
+
+   cairo_set_source(ctx, color_lut[cell->value]);
+   fill_rectangle(ctx, x, y, TILE_SIZE, TILE_SIZE);
+
+   if (cell->value) {
+
+      if (cell->value < 6) // one or two digits
+         cairo_set_font_size(ctx, FONT_SIZE * 2.0);
+      else if (cell->value < 10) // three digits
+         cairo_set_font_size(ctx, FONT_SIZE * 1.5);
+      else // four digits
+         cairo_set_font_size(ctx, FONT_SIZE);
+
+      set_rgb(ctx, 119, 110, 101);
+      draw_text_centered(ctx, label_lut[cell->value], x, y, TILE_SIZE, TILE_SIZE);
+   }
+}
+
 static void render_playing(void)
 {
    // bg
@@ -409,33 +462,28 @@ static void render_playing(void)
 
    cairo_select_font_face(ctx, FONT, CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
 
-   int ty = BOARD_OFFSET_Y + SPACING;
+   // draw background cells
+   static cell_t dummy;
+   dummy.ani_time = 1;
+   dummy.source = NULL;
+   dummy.value = 0;
 
    for (int row = 0; row < 4; row++) {
-      int tx = SPACING * 2;
-
       for (int col = 0; col < 4; col++) {
-         cell_t index = grid[row * 4 + col];
-         cairo_set_source(ctx, color_lut[index.value]);
-         fill_rectangle(ctx, tx, ty, TILE_SIZE, TILE_SIZE);
-
-         if (index.value) {
-
-            if (index.value < 6) // one or two digits
-               cairo_set_font_size(ctx, FONT_SIZE * 2.0);
-            else if (index.value < 10) // three digits
-               cairo_set_font_size(ctx, FONT_SIZE * 1.5);
-            else // four digits
-               cairo_set_font_size(ctx, FONT_SIZE);
-
-            set_rgb(ctx, 119, 110, 101);
-            draw_text_centered(ctx, label_lut[index.value], tx, ty, TILE_SIZE, TILE_SIZE);
-         }
-
-         tx += TILE_SIZE + SPACING;
+         dummy.pos.x = col;
+         dummy.pos.y = row;
+         dummy.old_pos = dummy.pos;
+         draw_tile(ctx, &dummy);
       }
+   }
 
-      ty += TILE_SIZE + SPACING;
+   // draw filled cells
+   for (int row = 0; row < 4; row++) {
+      for (int col = 0; col < 4; col++) {
+         cell_t *cell = &grid[row * 4 + col];
+         if (cell->value)
+            draw_tile(ctx, cell);
+      }
    }
 
    cairo_surface_flush(surface);

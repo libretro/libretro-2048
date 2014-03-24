@@ -7,6 +7,7 @@
 #define FONT_SIZE 20
 #define SPACING    (FONT_SIZE * 0.4)
 #define TILE_SIZE (FONT_SIZE * 4)
+#define TILE_ANIM_SPEED 5
 
 #define GRID_WIDTH   4
 #define GRID_HEIGHT  4
