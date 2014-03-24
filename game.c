@@ -54,7 +54,8 @@ typedef struct cell {
    int value;
    vector_t pos;
    vector_t old_pos;
-   float ani_time;
+   float move_time;
+   float appear_time;
    struct cell *source;
 } cell_t;
 
@@ -158,7 +159,8 @@ static bool move_tiles(void)
          cell_t *cell = &grid[row * 4 + col];
          cell->old_pos = cell->pos;
          cell->source = NULL;
-         cell->ani_time = 1;
+         cell->move_time = 1;
+         cell->appear_time = 1;
       }
    }
 
@@ -191,7 +193,7 @@ static bool move_tiles(void)
             next->value = cell->value + 1;
             next->source = cell;
             next->old_pos = cell->pos;
-            next->ani_time = 0;
+            next->move_time = 0;
             cell->value = 0;
             game_score += 2 << next->value;
             moved = true;
@@ -202,7 +204,7 @@ static bool move_tiles(void)
          } else if (farthest != cell) {
             farthest->value = cell->value;
             farthest->old_pos = cell->pos;
-            farthest->ani_time = 0;
+            farthest->move_time = 0;
             cell->value = 0;
             moved = true;
          }
@@ -255,9 +257,14 @@ static void add_tile(void)
          empty[j++] = &grid[i];
    }
 
-   if (j)
-      empty[rand() % j]->value = (rand() / RAND_MAX) < 0.9 ? 1 : 2;
-   else
+   if (j) {
+      j = rand() % j;
+      empty[j]->old_pos = empty[j]->pos;
+      empty[j]->source = NULL;
+      empty[j]->move_time = 1;
+      empty[j]->appear_time = 0;
+      empty[j]->value = (rand() / RAND_MAX) < 0.9 ? 1 : 2;
+   }else
       game_state = STATE_GAME_OVER;
 }
 
@@ -267,19 +274,15 @@ static void reset_board(void)
 
    for (int row = 0; row < 4; row++) {
       for (int col = 0; col < 4; col++) {
-         grid[row * 4 + col] = (cell_t) {
-            .pos = {
-               .x = col,
-               .y = row
-            },
-            .old_pos = {
-               .x = col,
-               .y = row
-            },
-            .ani_time = 1,
-            .value = 0,
-            .source = NULL
-         };
+         cell_t *cell = &grid[row * 4 + col];
+
+         cell->pos.x = col;
+         cell->pos.y = row;
+         cell->old_pos = cell->pos;
+         cell->move_time = 1;
+         cell->appear_time = 0;
+         cell->value = 0;
+         cell->source = NULL;
       }
    }
 
@@ -385,36 +388,50 @@ void game_update(float delta, key_state_t *new_ks)
 static void draw_tile(cairo_t *ctx, cell_t *cell)
 {
    int x, y;
+   int w = TILE_SIZE, h = TILE_SIZE;
+   int font_size = FONT_SIZE;
 
-   if (cell->value && cell->ani_time < 1/*(cell->pos.x != cell->old_pos.x || cell->pos.y != cell->old_pos.y)*/) {
+   if (cell->value && cell->move_time < 1/*(cell->pos.x != cell->old_pos.x || cell->pos.y != cell->old_pos.y)*/) {
       int x1, y1;
       int x2, y2;
 
       grid_to_screen(cell->old_pos, &x1, &y1);
       grid_to_screen(cell->pos, &x2, &y2);
 
-      x = lerp(x1, x2, cell->ani_time);
-      y = lerp(y1, y2, cell->ani_time);
+      x = lerp(x1, x2, cell->move_time);
+      y = lerp(y1, y2, cell->move_time);
 
-      cell->ani_time += frame_time * TILE_ANIM_SPEED;
+      cell->move_time += frame_time * TILE_ANIM_SPEED;
+   } else if (cell->appear_time < 1) {
+
+      grid_to_screen(cell->pos, &x, &y);
+
+      w = lerp(0, TILE_SIZE, cell->appear_time);
+      h = lerp(0, TILE_SIZE, cell->appear_time);
+      font_size = lerp(0, FONT_SIZE, cell->appear_time);
+
+      x += TILE_SIZE/2 - w/2;
+      y += TILE_SIZE/2 - h/2;
+
+      cell->appear_time += frame_time * TILE_ANIM_SPEED;
    } else {
       grid_to_screen(cell->pos, &x, &y);
    }
 
    cairo_set_source(ctx, color_lut[cell->value]);
-   fill_rectangle(ctx, x, y, TILE_SIZE, TILE_SIZE);
+   fill_rectangle(ctx, x, y, w, h);
 
    if (cell->value) {
 
       if (cell->value < 6) // one or two digits
-         cairo_set_font_size(ctx, FONT_SIZE * 2.0);
+         cairo_set_font_size(ctx, font_size * 2.0);
       else if (cell->value < 10) // three digits
-         cairo_set_font_size(ctx, FONT_SIZE * 1.5);
+         cairo_set_font_size(ctx, font_size * 1.5);
       else // four digits
-         cairo_set_font_size(ctx, FONT_SIZE);
+         cairo_set_font_size(ctx, font_size);
 
       set_rgb(ctx, 119, 110, 101);
-      draw_text_centered(ctx, label_lut[cell->value], x, y, TILE_SIZE, TILE_SIZE);
+      draw_text_centered(ctx, label_lut[cell->value], x, y, w, h);
    }
 }
 
@@ -464,7 +481,7 @@ static void render_playing(void)
 
    // draw background cells
    static cell_t dummy;
-   dummy.ani_time = 1;
+   dummy.move_time = 1;
    dummy.source = NULL;
    dummy.value = 0;
 
