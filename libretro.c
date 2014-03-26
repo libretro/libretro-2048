@@ -187,29 +187,41 @@ bool retro_load_game_special(unsigned type, const struct retro_game_info *info, 
 
 size_t retro_serialize_size(void)
 {
-   return 2;
+   return game_data_size();
 }
 
 bool retro_serialize(void *data_, size_t size)
 {
-   return false;
+   if (size < game_data_size())
+      return false;
+
+   memcpy(data_, game_data(), game_data_size());
+   return true;
 }
 
 bool retro_unserialize(const void *data_, size_t size)
 {
-   return false;
+   if (size < game_data_size())
+      return false;
+
+   memcpy(game_data(), data_, game_data_size());
+   return true;
 }
 
 void *retro_get_memory_data(unsigned id)
 {
-   (void)id;
-   return NULL;
+   if (id != RETRO_MEMORY_SAVE_RAM)
+      return NULL;
+
+   return game_data();
 }
 
 size_t retro_get_memory_size(unsigned id)
 {
-   (void)id;
-   return 0;
+   if (id != RETRO_MEMORY_SAVE_RAM)
+      return 0;
+
+   return game_data_size();
 }
 
 void retro_cheat_reset(void)
