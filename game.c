@@ -15,6 +15,7 @@
 int SCREEN_PITCH = 0;
 
 static cairo_surface_t *surface = NULL;
+static cairo_surface_t *static_surface = NULL;
 static cairo_t *ctx = NULL;
 
 static cairo_pattern_t* color_lut[13];
@@ -108,6 +109,57 @@ static void grid_to_screen(vector_t pos, int *x, int *y)
 {
    *x = SPACING * 2 + ((TILE_SIZE + SPACING) * pos.x);
    *y = BOARD_OFFSET_Y + SPACING + ((TILE_SIZE + SPACING) * pos.y);
+}
+
+static void draw_tile(cairo_t *ctx, cell_t *cell)
+{
+   int x, y;
+   int w = TILE_SIZE, h = TILE_SIZE;
+   int font_size = FONT_SIZE;
+
+   if (cell->value && cell->move_time < 1/*(cell->pos.x != cell->old_pos.x || cell->pos.y != cell->old_pos.y)*/) {
+      int x1, y1;
+      int x2, y2;
+
+      grid_to_screen(cell->old_pos, &x1, &y1);
+      grid_to_screen(cell->pos, &x2, &y2);
+
+      x = lerp(x1, x2, cell->move_time);
+      y = lerp(y1, y2, cell->move_time);
+
+      cell->move_time += frame_time * TILE_ANIM_SPEED;
+   } else if (cell->appear_time < 1) {
+
+      grid_to_screen(cell->pos, &x, &y);
+
+      w = lerp(0, TILE_SIZE, cell->appear_time);
+      h = lerp(0, TILE_SIZE, cell->appear_time);
+      font_size = lerp(0, FONT_SIZE, cell->appear_time);
+
+      x += TILE_SIZE/2 - w/2;
+      y += TILE_SIZE/2 - h/2;
+
+      cell->appear_time += frame_time * TILE_ANIM_SPEED;
+   } else {
+      grid_to_screen(cell->pos, &x, &y);
+   }
+
+   cairo_set_source(ctx, color_lut[cell->value]);
+   fill_rectangle(ctx, x, y, w, h);
+
+   if (cell->value) {
+      cairo_select_font_face(ctx, FONT, CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
+
+      if (cell->value < 6) // one or two digits
+         cairo_set_font_size(ctx, font_size * 2.0);
+      else if (cell->value < 10) // three digits
+         cairo_set_font_size(ctx, font_size * 1.5);
+      else // four digits
+         cairo_set_font_size(ctx, font_size);
+
+      set_rgb(ctx, 119, 110, 101);
+      draw_text_centered(ctx, label_lut[cell->value], x, y, w, h);
+   }
 }
 
 static bool move_tiles(void)
@@ -345,6 +397,57 @@ void game_init(uint16_t *frame_buf)
    color_lut[11] = cairo_pattern_create_rgb(237 / 255.0, 194 / 255.0, 46 / 255.0);
    color_lut[12] = cairo_pattern_create_rgb(60 / 255.0, 58 / 255.0, 50 / 255.0);
 
+   // cache board static elements
+   cairo_t *static_ctx;
+
+   static_surface = cairo_image_surface_create(CAIRO_FORMAT_RGB16_565, SCREEN_WIDTH, SCREEN_HEIGHT);
+   static_ctx = cairo_create(static_surface);
+
+   // bg
+   set_rgb(static_ctx, 250, 248, 239);
+   fill_rectangle(static_ctx, 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
+
+   // grid bg
+   set_rgb(static_ctx, 185, 172, 159);
+   fill_rectangle(static_ctx, SPACING, BOARD_OFFSET_Y, BOARD_WIDTH, BOARD_WIDTH);
+
+   // score bg
+   set_rgb(static_ctx, 185, 172, 159);
+   fill_rectangle(static_ctx, SPACING, SPACING, TILE_SIZE*2+SPACING*2, TILE_SIZE);
+
+   // best bg
+   set_rgb(static_ctx, 185, 172, 159);
+   fill_rectangle(static_ctx, TILE_SIZE*2+SPACING*4, SPACING, TILE_SIZE*2+SPACING*2, TILE_SIZE);
+
+   cairo_select_font_face(static_ctx, FONT, CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
+   cairo_set_font_size(static_ctx, FONT_SIZE);
+
+   // score title
+   cairo_set_source(static_ctx, color_lut[1]);
+   draw_text_centered(static_ctx, "SCORE", SPACING*2, SPACING * 2, 0, 0);
+
+   // best title
+   cairo_set_source(static_ctx, color_lut[1]);
+   draw_text_centered(static_ctx, "BEST", TILE_SIZE*2+SPACING*5, SPACING*2, 0, 0);
+
+   // draw background cells
+   cell_t dummy;
+   dummy.move_time = 1;
+   dummy.appear_time = 1;
+   dummy.source = NULL;
+   dummy.value = 0;
+
+   for (int row = 0; row < 4; row++) {
+      for (int col = 0; col < 4; col++) {
+         dummy.pos.x = col;
+         dummy.pos.y = row;
+         dummy.old_pos = dummy.pos;
+         draw_tile(static_ctx, &dummy);
+      }
+   }
+
+   cairo_destroy(static_ctx);
+
    game_reset();
 }
 
@@ -357,9 +460,11 @@ void game_deinit(void)
 
    cairo_destroy(ctx);
    cairo_surface_destroy(surface);
+   cairo_surface_destroy(static_surface);
 
    ctx     = NULL;
    surface = NULL;
+   static_surface = NULL;
 }
 
 void game_reset(void)
@@ -385,86 +490,15 @@ void game_update(float delta, key_state_t *new_ks)
    }
 }
 
-static void draw_tile(cairo_t *ctx, cell_t *cell)
-{
-   int x, y;
-   int w = TILE_SIZE, h = TILE_SIZE;
-   int font_size = FONT_SIZE;
-
-   if (cell->value && cell->move_time < 1/*(cell->pos.x != cell->old_pos.x || cell->pos.y != cell->old_pos.y)*/) {
-      int x1, y1;
-      int x2, y2;
-
-      grid_to_screen(cell->old_pos, &x1, &y1);
-      grid_to_screen(cell->pos, &x2, &y2);
-
-      x = lerp(x1, x2, cell->move_time);
-      y = lerp(y1, y2, cell->move_time);
-
-      cell->move_time += frame_time * TILE_ANIM_SPEED;
-   } else if (cell->appear_time < 1) {
-
-      grid_to_screen(cell->pos, &x, &y);
-
-      w = lerp(0, TILE_SIZE, cell->appear_time);
-      h = lerp(0, TILE_SIZE, cell->appear_time);
-      font_size = lerp(0, FONT_SIZE, cell->appear_time);
-
-      x += TILE_SIZE/2 - w/2;
-      y += TILE_SIZE/2 - h/2;
-
-      cell->appear_time += frame_time * TILE_ANIM_SPEED;
-   } else {
-      grid_to_screen(cell->pos, &x, &y);
-   }
-
-   cairo_set_source(ctx, color_lut[cell->value]);
-   fill_rectangle(ctx, x, y, w, h);
-
-   if (cell->value) {
-
-      if (cell->value < 6) // one or two digits
-         cairo_set_font_size(ctx, font_size * 2.0);
-      else if (cell->value < 10) // three digits
-         cairo_set_font_size(ctx, font_size * 1.5);
-      else // four digits
-         cairo_set_font_size(ctx, font_size);
-
-      set_rgb(ctx, 119, 110, 101);
-      draw_text_centered(ctx, label_lut[cell->value], x, y, w, h);
-   }
-}
-
 static void render_playing(void)
 {
-   // bg
-   set_rgb(ctx, 250, 248, 239);
-   fill_rectangle(ctx, 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
+   char tmp[10] = {0};
 
-   // grid bg
-   set_rgb(ctx, 185, 172, 159);
-   fill_rectangle(ctx, SPACING, BOARD_OFFSET_Y, BOARD_WIDTH, BOARD_WIDTH);
-
-   // score bg
-   set_rgb(ctx, 185, 172, 159);
-   fill_rectangle(ctx, SPACING, SPACING, TILE_SIZE*2+SPACING*2, TILE_SIZE);
-
-   // best bg
-   set_rgb(ctx, 185, 172, 159);
-   fill_rectangle(ctx, TILE_SIZE*2+SPACING*4, SPACING, TILE_SIZE*2+SPACING*2, TILE_SIZE);
+   // paint static background
+   cairo_set_source_surface(ctx, static_surface, 0, 0);
+   cairo_paint(ctx);
 
    cairo_select_font_face(ctx, FONT, CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
-   cairo_set_font_size(ctx, FONT_SIZE);
-
-   // score title
-   cairo_set_source(ctx, color_lut[1]);
-   draw_text_centered(ctx, "SCORE", SPACING*2, SPACING * 2, 0, 0);
-
-   // best title
-   cairo_set_source(ctx, color_lut[1]);
-   draw_text_centered(ctx, "BEST", TILE_SIZE*2+SPACING*5, SPACING*2, 0, 0);
-
-   char tmp[10] = {0};
    cairo_set_font_size(ctx, FONT_SIZE * 2);
 
    // score value
@@ -477,24 +511,6 @@ static void render_playing(void)
    cairo_set_source(ctx, color_lut[1]);
    draw_text_centered(ctx, tmp, TILE_SIZE*2+SPACING*5, SPACING * 5, TILE_SIZE*2, 0);
 
-   cairo_select_font_face(ctx, FONT, CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
-
-   // draw background cells
-   static cell_t dummy;
-   dummy.move_time = 1;
-   dummy.source = NULL;
-   dummy.value = 0;
-
-   for (int row = 0; row < 4; row++) {
-      for (int col = 0; col < 4; col++) {
-         dummy.pos.x = col;
-         dummy.pos.y = row;
-         dummy.old_pos = dummy.pos;
-         draw_tile(ctx, &dummy);
-      }
-   }
-
-   // draw filled cells
    for (int row = 0; row < 4; row++) {
       for (int col = 0; col < 4; col++) {
          cell_t *cell = &grid[row * 4 + col];
