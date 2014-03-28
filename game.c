@@ -55,6 +55,10 @@ typedef struct game {
 
 static game_t game;
 
+// +score animations
+static int delta_score;
+static float delta_score_time;
+
 int SCREEN_PITCH = 0;
 
 static cairo_surface_t *surface = NULL;
@@ -104,10 +108,30 @@ static void draw_text_centered(cairo_t *ctx, const char *utf8, int x, int y, int
    draw_text(ctx, utf8, x + font_off_x, y + font_off_y);
 }
 
+// interpolation functions {{{
 static float lerp(float v0, float v1, float t)
 {
    return v0 * (1 - t) + v1 * t;
 }
+
+static float cos_interp(float v0,float v1, float t)
+{
+   float t2;
+
+   t2 = (1-cos(t*PI))/2;
+   return(v0*(1-t2)+v1*t2);
+}
+
+// out back bicubic
+// from http://www.timotheegroleau.com/Flash/experiments/easing_function_generator.htm
+static float bump_out(float v0, float v1, float t)
+{
+   t /= 1;// intensity (d)
+   float ts = t  * t;
+   float tc = ts * t;
+   return v0 + v1 * (4*tc + -9*ts + 6*t);
+}
+// }}}
 
 static void grid_to_screen(vector_t pos, int *x, int *y)
 {
@@ -131,14 +155,19 @@ static void draw_tile(cairo_t *ctx, cell_t *cell)
       x = lerp(x1, x2, cell->move_time);
       y = lerp(y1, y2, cell->move_time);
 
+      if (cell->move_time < 0.5 && cell->source)
+         draw_tile(ctx, cell->source);
+
       cell->move_time += frame_time * TILE_ANIM_SPEED;
    } else if (cell->appear_time < 1) {
 
       grid_to_screen(cell->pos, &x, &y);
 
-      w = lerp(0, TILE_SIZE, cell->appear_time);
-      h = lerp(0, TILE_SIZE, cell->appear_time);
-      font_size = lerp(0, FONT_SIZE, cell->appear_time);
+      w = h = bump_out(0, TILE_SIZE, cell->appear_time);
+      font_size = bump_out(0, FONT_SIZE, cell->appear_time);
+//      w = lerp(0, TILE_SIZE, cell->appear_time);
+//      h = lerp(0, TILE_SIZE, cell->appear_time);
+//      font_size = lerp(0, FONT_SIZE, cell->appear_time);
 
       x += TILE_SIZE/2 - w/2;
       y += TILE_SIZE/2 - h/2;
@@ -209,6 +238,10 @@ static void start_game(void)
          cell->source = NULL;
       }
    }
+
+   // reset +score animation
+   delta_score    = 0;
+   delta_score_time = 1;
 
    add_tile();
    add_tile();
@@ -284,6 +317,8 @@ static bool move_tiles(void)
 
    bool moved = false;
 
+   delta_score = game.score;
+
    // clear source cell and save current position in the grid
    for (int row = row_begin; row != row_end; row += row_inc)
    {
@@ -331,12 +366,12 @@ static bool move_tiles(void)
             next->old_pos = cell->pos;
             next->move_time = 0;
             cell->value = 0;
+
             game.score += 2 << next->value;
             moved = true;
 
             if (next->value == 11)
                game.state = STATE_WON;
-
          }
          else if (farthest != cell)
          {
@@ -348,6 +383,9 @@ static bool move_tiles(void)
          }
       }
    }
+
+   delta_score      = game.score - delta_score;
+   delta_score_time = delta_score == 0 ? 1 : 0;
 
    return moved;
 }
@@ -570,12 +608,11 @@ static void render_playing(void)
    cairo_select_font_face(ctx, FONT, CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
    cairo_set_font_size(ctx, FONT_SIZE * 2);
 
-   // score value
+   // score and best score value
+   set_rgb(ctx, 255, 255, 255);
    sprintf(tmp, "%i", game.score % 1000000);
-   cairo_set_source(ctx, color_lut[1]);
    draw_text_centered(ctx, tmp, SPACING*2, SPACING * 5, TILE_SIZE*2, 0);
 
-   // best value
    sprintf(tmp, "%i", game.best_score % 1000000);
    cairo_set_source(ctx, color_lut[1]);
    draw_text_centered(ctx, tmp, TILE_SIZE*2+SPACING*5, SPACING * 5, TILE_SIZE*2, 0);
@@ -589,6 +626,25 @@ static void render_playing(void)
          if (cell->value)
             draw_tile(ctx, cell);
       }
+   }
+
+   // draw +score animation
+   if (delta_score_time < 1)
+   {
+      cairo_select_font_face(ctx, FONT, CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
+      cairo_set_font_size(ctx, FONT_SIZE * 1.2);
+
+      int x = SPACING * 2;
+      int y = SPACING * 5;
+
+      y = lerp(y, y - TILE_SIZE, delta_score_time);
+
+      set_rgba(ctx, 119, 110, 101, lerp(1, 0, delta_score_time));
+
+      sprintf(tmp, "+%i", delta_score);
+      draw_text_centered(ctx, tmp, x, y, TILE_SIZE * 2, TILE_SIZE);
+
+      delta_score_time += frame_time;
    }
 
    cairo_surface_flush(surface);
