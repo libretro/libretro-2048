@@ -61,7 +61,7 @@ CFLAGS += -Wall -pedantic $(fpic)
 #LIBS := $(shell pkg-config --libs-only-l $(packages)) -lm
 CFLAGS += -Icairo/src -Ipixman/pixman
 LFLAGS := 
-LIBS := -lm cairo/src/.libs/libcairo.a pixman/pixman/.libs/libpixman-1.a -lpthread -lfreetype -lfontconfig
+LIBS := cairo/src/.libs/libcairo.a pixman/pixman/.libs/libpixman-1.a -lpthread -lfreetype -lfontconfig -lm
 
 ifeq ($(platform), qnx)
    CFLAGS += -Wc,-std=gnu99
