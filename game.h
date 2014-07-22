@@ -31,6 +31,7 @@ typedef struct
    int left;
    int right;
    int start;
+   int select;
 } key_state_t;
 
 void game_calculate_pitch(void);
