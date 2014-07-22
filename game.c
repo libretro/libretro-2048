@@ -592,6 +592,30 @@ void *game_data()
    return &game;
 }
 
+void *game_save_data()
+{
+   // stop animations
+   for (int row = 0; row < 4; row++)
+   {
+      for (int col = 0; col < 4; col++)
+      {
+         game.grid[row * 4 + col].appear_time = 1;
+         game.grid[row * 4 + col].move_time   = 1;
+      }
+   }
+
+   delta_score_time = 1;
+
+   // show title screen when the game gets loaded again.
+   if (game.state != STATE_PLAYING)
+   {
+      game.score = 0;
+      game.state = STATE_TITLE;
+   }
+
+   return &game;
+}
+
 unsigned game_data_size()
 {
    return sizeof(game);
