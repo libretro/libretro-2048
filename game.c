@@ -27,7 +27,8 @@ typedef enum
    STATE_TITLE,
    STATE_PLAYING,
    STATE_GAME_OVER,
-   STATE_WON
+   STATE_WON,
+   STATE_PAUSED
 } game_state_t;
 
 typedef struct vector {
@@ -262,12 +263,15 @@ static void change_state(game_state_t state)
       start_game();
       break;
    case STATE_PLAYING:
-      assert(state == STATE_GAME_OVER || state == STATE_WON);
-      end_game();
+      assert(state == STATE_GAME_OVER || state == STATE_WON || state == STATE_PAUSED);
+      if (state != STATE_PAUSED)
+         end_game();
       break;
    case STATE_WON:
       assert(state == STATE_TITLE);
       break;
+   case STATE_PAUSED:
+      assert(state == STATE_PLAYING || state == STATE_TITLE);
    }
 
    game.state = state;
@@ -445,6 +449,18 @@ static void handle_input(key_state_t *ks)
          game.direction = DIR_DOWN;
       else if (!ks->left && game.old_ks.left)
          game.direction = DIR_LEFT;
+      else if (ks->start && !game.old_ks.start)
+         change_state(STATE_PAUSED);
+   }
+   else if (game.state == STATE_PAUSED)
+   {
+      if (ks->start && !game.old_ks.start)
+         change_state(STATE_PLAYING);
+      else if (ks->select && !game.old_ks.select)
+      {
+         game.state = STATE_PLAYING;
+         start_game();;
+      }
    }
 
    game.old_ks = *ks;
@@ -592,6 +608,30 @@ void *game_data()
    return &game;
 }
 
+void *game_save_data()
+{
+   // stop animations
+   for (int row = 0; row < 4; row++)
+   {
+      for (int col = 0; col < 4; col++)
+      {
+         game.grid[row * 4 + col].appear_time = 1;
+         game.grid[row * 4 + col].move_time   = 1;
+      }
+   }
+
+   delta_score_time = 1;
+
+   // show title screen when the game gets loaded again.
+   if (game.state != STATE_PLAYING && game.state != STATE_PAUSED)
+   {
+      game.score = 0;
+      game.state = STATE_TITLE;
+   }
+
+   return &game;
+}
+
 unsigned game_data_size()
 {
    return sizeof(game);
@@ -706,6 +746,38 @@ static void render_win_or_game_over(void)
                       SCREEN_HEIGHT - TILE_SIZE * 2 - SPACING * 2, FONT_SIZE * 3 - SPACING * 2);
 }
 
+static void render_paused(void)
+{
+   render_playing();
+
+   // bg
+   set_rgba(ctx, 250, 248, 239, 0.85);
+   fill_rectangle(ctx, 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
+
+   cairo_select_font_face(ctx, FONT, CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
+   cairo_set_font_size(ctx, FONT_SIZE * 2);
+
+   set_rgb(ctx, 185, 172, 159);
+   draw_text_centered(ctx, "Paused", 0, 0, SCREEN_WIDTH, TILE_SIZE*3);
+
+   cairo_select_font_face(ctx, FONT, CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
+   cairo_set_font_size(ctx, FONT_SIZE);
+
+   set_rgb(ctx, 185, 172, 159);
+   char tmp[100];
+
+   sprintf(tmp, "Score: %i", game.score);
+   draw_text_centered(ctx, tmp, 0, 0, SCREEN_WIDTH, TILE_SIZE*5);
+
+   set_rgb(ctx, 185, 172, 159);
+   fill_rectangle(ctx, TILE_SIZE / 2, TILE_SIZE * 4, SCREEN_HEIGHT - TILE_SIZE * 2, FONT_SIZE * 5);
+   cairo_set_source(ctx, color_lut[1]);
+   draw_text_centered(ctx, "SELECT: New Game", TILE_SIZE / 2 + SPACING, TILE_SIZE * 4 + SPACING,
+                      SCREEN_HEIGHT - TILE_SIZE * 2 - SPACING * 2, FONT_SIZE * 3 - SPACING * 2);
+   draw_text_centered(ctx, "START: Continue", TILE_SIZE / 2 + SPACING, TILE_SIZE * 4 + SPACING + FONT_SIZE * 2,
+                      SCREEN_HEIGHT - TILE_SIZE * 2 - SPACING * 2, FONT_SIZE * 3 - SPACING * 2);
+}
+
 void game_render(void)
 {
    if (game.state == STATE_PLAYING)
@@ -714,4 +786,6 @@ void game_render(void)
       render_title();
    else if (game.state == STATE_GAME_OVER || game.state == STATE_WON)
       render_win_or_game_over();
+   else if (game.state == STATE_PAUSED)
+      render_paused();
 }

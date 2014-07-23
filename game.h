@@ -31,6 +31,7 @@ typedef struct
    int left;
    int right;
    int start;
+   int select;
 } key_state_t;
 
 void game_calculate_pitch(void);
@@ -40,6 +41,7 @@ void game_deinit(void);
 void game_reset(void);
 void game_update(float delta, key_state_t *new_ks);
 void *game_data();
+void *game_save_data();
 unsigned game_data_size();
 void game_render(void);
 

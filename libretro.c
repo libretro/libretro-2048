@@ -7,6 +7,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdarg.h>
+#include <errno.h>
 
 static uint16_t *frame_buf;
 
@@ -36,10 +37,53 @@ void retro_init(void)
    frame_buf = calloc(SCREEN_HEIGHT, SCREEN_PITCH);
 
    game_init(frame_buf);
+
+   char *savedir;
+   environ_cb(RETRO_ENVIRONMENT_GET_SAVE_DIRECTORY, &savedir);
+
+   if (savedir)
+   {
+      char filename[1024] = {0};
+      sprintf(filename, "%s/2048.srm", savedir);
+
+      FILE *fp = fopen(filename, "rb");
+
+      if (fp)
+      {
+         fread(game_data(), game_data_size(), 1, fp);
+         fclose(fp);
+      }
+      else
+         logging.log(RETRO_LOG_WARN, "[2048] unable to load game data: %s.", strerror(errno));
+   }
+   else
+      logging.log(RETRO_LOG_WARN, "[2048] unable to load game data: save directory not set.");
 }
 
 void retro_deinit(void)
 {
+   char *savedir;
+   environ_cb(RETRO_ENVIRONMENT_GET_SAVE_DIRECTORY, &savedir);
+
+   if (savedir)
+   {
+      char filename[1024] = {0};
+      sprintf(filename, "%s/2048.srm", savedir);
+
+      FILE *fp = fopen(filename, "wb");
+
+      if (fp)
+      {
+         fwrite(game_save_data(), game_data_size(), 1, fp);
+         fclose(fp);
+      }
+      else
+         logging.log(RETRO_LOG_WARN, "[2048] unable to save game data: %s.", strerror(errno));
+   }
+   else
+      logging.log(RETRO_LOG_WARN, "[2048] unable to save game data: save directory not set.");
+
+
    game_deinit();
 
    free(frame_buf);
@@ -135,6 +179,7 @@ void retro_run(void)
    ks.down = input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_DOWN);
    ks.left = input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_LEFT);
    ks.start = input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_START);
+   ks.select = input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_SELECT);
 
    game_update(frame_time, &ks);
    game_render();
