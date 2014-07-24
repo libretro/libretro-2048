@@ -54,10 +54,10 @@ void retro_init(void)
          fclose(fp);
       }
       else
-         logging.log(RETRO_LOG_WARN, "[2048] unable to load game data: %s.", strerror(errno));
+         logging.log(RETRO_LOG_WARN, "[2048] unable to load game data: %s.\n", strerror(errno));
    }
    else
-      logging.log(RETRO_LOG_WARN, "[2048] unable to load game data: save directory not set.");
+      logging.log(RETRO_LOG_WARN, "[2048] unable to load game data: save directory not set.\n");
 }
 
 void retro_deinit(void)
@@ -78,10 +78,10 @@ void retro_deinit(void)
          fclose(fp);
       }
       else
-         logging.log(RETRO_LOG_WARN, "[2048] unable to save game data: %s.", strerror(errno));
+         logging.log(RETRO_LOG_WARN, "[2048] unable to save game data: %s.\n", strerror(errno));
    }
    else
-      logging.log(RETRO_LOG_WARN, "[2048] unable to save game data: save directory not set.");
+      logging.log(RETRO_LOG_WARN, "[2048] unable to save game data: save directory not set.\n");
 
 
    game_deinit();
