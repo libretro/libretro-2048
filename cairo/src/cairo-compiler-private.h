@@ -227,6 +227,10 @@ ffs (int x)
     return 0;
 }
 
+#elif defined(__WIN32__) && defined(__GNUC__)
+
+#define ffs(x) __builtin_ffs(x)
+
 #endif
 
 #if defined(_MSC_VER) && defined(_M_IX86)

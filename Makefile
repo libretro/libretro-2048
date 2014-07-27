@@ -65,6 +65,10 @@ CFLAGS += -I$(DEP_INSTALL_DIR)/include
 LFLAGS := -L$(DEP_INSTALL_DIR)/lib
 LIBS := $(DEP_INSTALL_DIR)/lib/libcairo.a $(DEP_INSTALL_DIR)/lib/libpixman-1.a -lpthread -lfreetype -lfontconfig -lm
 
+ifeq ($(platform), win)
+	LIBS += -lgdi32 -lmsimg32
+endif
+
 ifeq ($(platform), qnx)
    CFLAGS += -Wc,-std=gnu99
 else
@@ -103,9 +107,9 @@ $(DEP_INSTALL_DIR)/lib/libcairo.a: $(DEP_INSTALL_DIR)/lib/libpixman-1.a
 			--enable-gobject=no --enable-trace=no --enable-interpreter=no \
 			--enable-symbol-lookup=no --enable-svg=no --enable-pdf=no --enable-ps=no \
 			--enable-wgl=no --enable-glx=no --enable-egl=no --disable-valgrind \
-			--enable-silent-rules --enable-png=no  --enable-xlib=no --enable-win32=no \
+			--enable-silent-rules --enable-png=no  --enable-xlib=no \
 			--enable-drm=no --enable-xcb-drm=no --enable-drm-xr=no --disable-lto  \
-			--enable-freetype=no $(with_fpic) CFLAGS="-fno-lto" \
+			$(with_fpic) CFLAGS="-fno-lto" \
 			pixman_CFLAGS="-I$(DEP_INSTALL_DIR)/include/pixman-1" pixman_LIBS="-L$(DEP_INSTALL_DIR)/lib -lpixman-1" --prefix=$(DEP_INSTALL_DIR) && \
 		make; make install
 
