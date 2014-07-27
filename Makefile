@@ -76,6 +76,11 @@ ifneq ($(fpic),)
    with_fpic := --with-pic=yes
 endif
 
+host_opts=
+ifneq ($(HOST),)
+	host_opts := --host=$(HOST)
+endif
+
 all: $(TARGET) 
 
 deps: $(DEP_INSTALL_DIR)/lib/libcairo.a
@@ -89,12 +94,12 @@ $(TARGET): $(OBJECTS)
 
 $(DEP_INSTALL_DIR)/lib/libpixman-1.a:
 	cd pixman; \
-		./configure --enable-shared=no --enable-static=yes $(with_fpic) CFLAGS="-fno-lto" --prefix=$(DEP_INSTALL_DIR) && \
+		./configure $(host_opts) --enable-shared=no --enable-static=yes $(with_fpic) CFLAGS="-fno-lto" --prefix=$(DEP_INSTALL_DIR) && \
 		make; make install
 
 $(DEP_INSTALL_DIR)/lib/libcairo.a: $(DEP_INSTALL_DIR)/lib/libpixman-1.a
 	cd cairo; \
-		./configure --enable-static=yes --enable-ft=yes --enable-shared=no \
+		./configure $(host_opts) --enable-static=yes --enable-ft=yes --enable-shared=no \
 			--enable-gobject=no --enable-trace=no --enable-interpreter=no \
 			--enable-symbol-lookup=no --enable-svg=no --enable-pdf=no --enable-ps=no \
 			--enable-wgl=no --enable-glx=no --enable-egl=no --disable-valgrind \
