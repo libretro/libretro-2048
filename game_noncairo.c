@@ -1,4 +1,5 @@
 #include "game.h"
+#include "game_shared.h"
 
 #include <stdint.h>
 #include <string.h>
@@ -232,31 +233,6 @@ static void draw_text_centered(int ctx, const char *utf8, int x, int y, int w, i
    Draw_text(ptr,x+fox,y+foy,nullctx.color,0 ,nullctx.fontsize_x,nullctx.fontsize_y ,size, utf8);
 
 }
-
-// interpolation functions {{{
-static float lerp(float v0, float v1, float t)
-{
-   return v0 * (1 - t) + v1 * t;
-}
-
-static float cos_interp(float v0,float v1, float t)
-{
-   float t2;
-
-   t2 = (1-cos(t*PI))/2;
-   return(v0*(1-t2)+v1*t2);
-}
-
-// out back bicubic
-// from http://www.timotheegroleau.com/Flash/experiments/easing_function_generator.htm
-static float bump_out(float v0, float v1, float t)
-{
-   t /= 1;// intensity (d)
-   float ts = t  * t;
-   float tc = ts * t;
-   return v0 + v1 * (4*tc + -9*ts + 6*t);
-}
-// }}}
 
 static void grid_to_screen(vector_t pos, int *x, int *y)
 {

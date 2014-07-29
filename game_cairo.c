@@ -1,4 +1,5 @@
 #include "game.h"
+#include "game_shared.h"
 
 #include <stdint.h>
 #include <string.h>
@@ -109,31 +110,6 @@ static void draw_text_centered(cairo_t *ctx, const char *utf8, int x, int y, int
    draw_text(ctx, utf8, x + font_off_x, y + font_off_y);
 }
 
-// interpolation functions {{{
-static float lerp(float v0, float v1, float t)
-{
-   return v0 * (1 - t) + v1 * t;
-}
-
-static float cos_interp(float v0,float v1, float t)
-{
-   float t2;
-
-   t2 = (1-cos(t*PI))/2;
-   return(v0*(1-t2)+v1*t2);
-}
-
-// out back bicubic
-// from http://www.timotheegroleau.com/Flash/experiments/easing_function_generator.htm
-static float bump_out(float v0, float v1, float t)
-{
-   t /= 1;// intensity (d)
-   float ts = t  * t;
-   float tc = ts * t;
-   return v0 + v1 * (4*tc + -9*ts + 6*t);
-}
-// }}}
-
 static void grid_to_screen(vector_t pos, int *x, int *y)
 {
    *x = SPACING * 2 + ((TILE_SIZE + SPACING) * pos.x);
@@ -146,7 +122,8 @@ static void draw_tile(cairo_t *ctx, cell_t *cell)
    int w = TILE_SIZE, h = TILE_SIZE;
    int font_size = FONT_SIZE;
 
-   if (cell->value && cell->move_time < 1) {
+   if (cell->value && cell->move_time < 1)
+   {
       int x1, y1;
       int x2, y2;
 
@@ -160,8 +137,9 @@ static void draw_tile(cairo_t *ctx, cell_t *cell)
          draw_tile(ctx, cell->source);
 
       cell->move_time += frame_time * TILE_ANIM_SPEED;
-   } else if (cell->appear_time < 1) {
-
+   }
+   else if (cell->appear_time < 1)
+   {
       grid_to_screen(cell->pos, &x, &y);
 
       w = h = bump_out(0, TILE_SIZE, cell->appear_time);
@@ -199,35 +177,42 @@ static void draw_tile(cairo_t *ctx, cell_t *cell)
 static void change_state(game_state_t state);
 static void add_tile(void)
 {
+   int i, j
    cell_t *empty[GRID_SIZE];
 
    if (game.state != STATE_PLAYING)
       return;
 
-   int j = 0;
-   for (int i = 0; i < GRID_SIZE; i++) {
+   j = 0;
+   for (i = 0; i < GRID_SIZE; i++)
+   {
       empty[j] = NULL;
       if (!game.grid[i].value)
          empty[j++] = &game.grid[i];
    }
 
-   if (j) {
+   if (j)
+   {
       j = rand() % j;
       empty[j]->old_pos = empty[j]->pos;
       empty[j]->source = NULL;
       empty[j]->move_time = 1;
       empty[j]->appear_time = 0;
       empty[j]->value = (rand() / RAND_MAX) < 0.9 ? 1 : 2;
-   } else
+   }
+   else
       change_state(STATE_GAME_OVER);
 }
 
 static void start_game(void)
 {
+   int row, col;
    game.score = 0;
 
-   for (int row = 0; row < 4; row++) {
-      for (int col = 0; col < 4; col++) {
+   for (row = 0; row < 4; row++)
+   {
+      for (col = 0; col < 4; col++)
+      {
          cell_t *cell = &game.grid[row * 4 + col];
 
          cell->pos.x = col;
@@ -281,7 +266,8 @@ static bool move_tiles(void)
 {
    int vec_x, vec_y;
 
-   switch (game.direction) {
+   switch (game.direction)
+   {
       case DIR_UP:
          vec_x = 0; vec_y = -1;
          break;
@@ -396,9 +382,10 @@ static bool move_tiles(void)
 
 static bool cells_available(void)
 {
-   for (int row = 0; row < GRID_HEIGHT; row++)
+   int row, col;
+   for (row = 0; row < GRID_HEIGHT; row++)
    {
-      for (int col = 0; col < GRID_WIDTH; col++)
+      for (col = 0; col < GRID_WIDTH; col++)
       {
          if (!game.grid[row * GRID_WIDTH + col].value)
             return true;
@@ -410,9 +397,10 @@ static bool cells_available(void)
 
 static bool matches_available(void)
 {
-   for (int row = 0; row < GRID_HEIGHT; row++)
+   int row, col;
+   for (row = 0; row < GRID_HEIGHT; row++)
    {
-      for (int col = 0; col < GRID_WIDTH; col++)
+      for (col = 0; col < GRID_WIDTH; col++)
       {
          cell_t *cell = &game.grid[row * GRID_WIDTH + col];
 
@@ -491,8 +479,9 @@ static void init_luts(void)
    color_lut[12] = cairo_pattern_create_rgb(60 / 255.0, 58 / 255.0, 50 / 255.0);
 }
 
-static void init_static_surface()
+static void init_static_surface(void)
 {
+   int row, col;
    cairo_t *static_ctx;
 
    static_surface = cairo_image_surface_create(CAIRO_FORMAT_RGB16_565, SCREEN_WIDTH, SCREEN_HEIGHT);
@@ -532,9 +521,9 @@ static void init_static_surface()
    dummy.source = NULL;
    dummy.value = 0;
 
-   for (int row = 0; row < 4; row++)
+   for (row = 0; row < 4; row++)
    {
-      for (int col = 0; col < 4; col++)
+      for (col = 0; col < 4; col++)
       {
          dummy.pos.x = col;
          dummy.pos.y = row;
@@ -614,12 +603,14 @@ void *game_data()
    return &game;
 }
 
-void *game_save_data()
+void *game_save_data(void)
 {
+   int row, col;
+
    // stop animations
-   for (int row = 0; row < 4; row++)
+   for (row = 0; row < 4; row++)
    {
-      for (int col = 0; col < 4; col++)
+      for (col = 0; col < 4; col++)
       {
          game.grid[row * 4 + col].appear_time = 1;
          game.grid[row * 4 + col].move_time   = 1;
@@ -638,7 +629,7 @@ void *game_save_data()
    return &game;
 }
 
-unsigned game_data_size()
+unsigned game_data_size(void)
 {
    return sizeof(game);
 }

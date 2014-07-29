@@ -53,7 +53,7 @@ else
    CFLAGS += -O3
 endif
 
-OBJECTS := libretro.o game_cairo.o
+OBJECTS := libretro.o game_cairo.o game_shared.o
 CFLAGS += -Wall -pedantic $(fpic)
 
 #packages=cairo

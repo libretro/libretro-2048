@@ -22,7 +22,6 @@
 #define SCREEN_WIDTH   SPACING + BOARD_WIDTH + SPACING
 #define SCREEN_HEIGHT  BOARD_OFFSET_Y + BOARD_HEIGHT + SPACING
 
-#define PI 3.14159
 extern int SCREEN_PITCH;
 
 typedef struct
