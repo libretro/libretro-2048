@@ -36,7 +36,7 @@ typedef struct
 
 extern retro_environment_t environ_cb;
 extern retro_video_refresh_t video_cb;
-extern struct retro_log_callback logging;
+extern retro_log_printf_t log_cb;
 
 void game_calculate_pitch(void);
 

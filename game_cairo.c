@@ -177,7 +177,7 @@ static void draw_tile(cairo_t *ctx, cell_t *cell)
 static void change_state(game_state_t state);
 static void add_tile(void)
 {
-   int i, j
+   int i, j;
    cell_t *empty[GRID_SIZE];
 
    if (game.state != STATE_PLAYING)
@@ -780,7 +780,8 @@ int game_init_pixelformat(void)
    enum retro_pixel_format fmt = RETRO_PIXEL_FORMAT_RGB565;
    if (!environ_cb(RETRO_ENVIRONMENT_SET_PIXEL_FORMAT, &fmt))
    {
-      logging.log(RETRO_LOG_INFO, "RGB565 is not supported.\n");
+      if (log_cb)
+         log_cb(RETRO_LOG_INFO, "RGB565 is not supported.\n");
       return 0;
    }
 

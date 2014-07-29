@@ -861,7 +861,8 @@ int game_init_pixelformat(void)
    enum retro_pixel_format fmt = RETRO_PIXEL_FORMAT_XRGB8888;
    if (!environ_cb(RETRO_ENVIRONMENT_SET_PIXEL_FORMAT, &fmt))
    {
-      logging.log(RETRO_LOG_INFO, "XRGB8888 is not supported.\n");
+      if (log_cb)
+         log_cb(RETRO_LOG_INFO, "XRGB8888 is not supported.\n");
       return 0;
    }
 

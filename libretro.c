@@ -8,7 +8,7 @@
 #include <stdarg.h>
 #include <errno.h>
 
-struct retro_log_callback logging;
+retro_log_printf_t log_cb;
 retro_video_refresh_t video_cb;
 static retro_audio_sample_t audio_cb;
 static retro_audio_sample_batch_t audio_batch_cb;
@@ -49,10 +49,16 @@ void retro_init(void)
          fclose(fp);
       }
       else
-         logging.log(RETRO_LOG_WARN, "[2048] unable to load game data: %s.\n", strerror(errno));
+      {
+         if (log_cb)
+            log_cb(RETRO_LOG_WARN, "[2048] unable to load game data: %s.\n", strerror(errno));
+      }
    }
    else
-      logging.log(RETRO_LOG_WARN, "[2048] unable to load game data: save directory not set.\n");
+   {
+         if (log_cb)
+            log_cb(RETRO_LOG_WARN, "[2048] unable to load game data: save directory not set.\n");
+   }
 }
 
 void retro_deinit(void)
@@ -73,10 +79,16 @@ void retro_deinit(void)
          fclose(fp);
       }
       else
-         logging.log(RETRO_LOG_WARN, "[2048] unable to save game data: %s.\n", strerror(errno));
+      {
+         if (log_cb)
+            log_cb(RETRO_LOG_WARN, "[2048] unable to save game data: %s.\n", strerror(errno));
+      }
    }
    else
-      logging.log(RETRO_LOG_WARN, "[2048] unable to save game data: save directory not set.\n");
+   {
+      if (log_cb)
+         log_cb(RETRO_LOG_WARN, "[2048] unable to save game data: save directory not set.\n");
+   }
 
 
    game_deinit();
@@ -116,13 +128,16 @@ void retro_get_system_av_info(struct retro_system_av_info *info)
 
 void retro_set_environment(retro_environment_t cb)
 {
+   struct retro_log_callback logging;
    environ_cb = cb;
 
    bool no_rom = true;
    cb(RETRO_ENVIRONMENT_SET_SUPPORT_NO_GAME, &no_rom);
 
-   if (!cb(RETRO_ENVIRONMENT_GET_LOG_INTERFACE, &logging))
-      logging.log = fallback_log;
+   if (cb(RETRO_ENVIRONMENT_GET_LOG_INTERFACE, &logging))
+      log_cb = logging.log;
+   else
+      log_cb = fallback_log;
 }
 
 void retro_set_audio_sample(retro_audio_sample_t cb)

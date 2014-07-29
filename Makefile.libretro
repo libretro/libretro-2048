@@ -58,7 +58,7 @@ CFLAGS += -Wall -pedantic $(fpic)
 
 CFLAGS += 
 LFLAGS := 
-LIBS := -lpthread -lm
+LIBS := -lm
 
 ifeq ($(platform), qnx)
    CFLAGS += -Wc,-std=gnu99
