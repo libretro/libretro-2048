@@ -34,6 +34,48 @@ typedef struct
    int select;
 } key_state_t;
 
+typedef enum
+{
+   DIR_NONE,
+   DIR_UP,
+   DIR_RIGHT,
+   DIR_DOWN,
+   DIR_LEFT
+} direction_t;
+
+typedef enum
+{
+   STATE_TITLE,
+   STATE_PLAYING,
+   STATE_GAME_OVER,
+   STATE_WON,
+   STATE_PAUSED
+} game_state_t;
+
+typedef struct vector
+{
+   int x;
+   int y;
+} vector_t;
+
+typedef struct cell {
+   int value;
+   vector_t pos;
+   vector_t old_pos;
+   float move_time;
+   float appear_time;
+   struct cell *source;
+} cell_t;
+
+typedef struct game {
+   int score;
+   int best_score;
+   game_state_t state;
+   key_state_t old_ks;
+   direction_t direction;
+   cell_t grid[GRID_SIZE];
+} game_t;
+
 extern retro_environment_t environ_cb;
 extern retro_video_refresh_t video_cb;
 extern retro_log_printf_t log_cb;
@@ -49,5 +91,10 @@ void *game_save_data(void);
 unsigned game_data_size(void);
 void game_render(void);
 int game_init_pixelformat(void);
+
+void render_playing(void);
+void render_title(void);
+void render_win_or_game_over(void);
+void render_paused(void);
 
 #endif // GAME_H

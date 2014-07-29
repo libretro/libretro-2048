@@ -12,59 +12,11 @@
 
 #include <cairo/cairo.h>
 
-typedef enum
-{
-   DIR_NONE,
-   DIR_UP,
-   DIR_RIGHT,
-   DIR_DOWN,
-   DIR_LEFT
-} direction_t;
-
-typedef enum
-{
-   STATE_TITLE,
-   STATE_PLAYING,
-   STATE_GAME_OVER,
-   STATE_WON,
-   STATE_PAUSED
-} game_state_t;
-
-typedef struct vector {
-   int x;
-   int y;
-} vector_t;
-
-typedef struct cell {
-   int value;
-   vector_t pos;
-   vector_t old_pos;
-   float move_time;
-   float appear_time;
-   struct cell *source;
-} cell_t;
-
-typedef struct game {
-   int score;
-   int best_score;
-   game_state_t state;
-   key_state_t old_ks;
-   direction_t direction;
-   cell_t grid[GRID_SIZE];
-} game_t;
-
-static game_t game;
-
-// +score animations
-static int delta_score;
-static float delta_score_time;
-
 int SCREEN_PITCH = 0;
 
 static cairo_surface_t *surface = NULL;
 static cairo_surface_t *static_surface = NULL;
 static cairo_t *ctx = NULL;
-static float frame_time = 0.016;
 static cairo_pattern_t* color_lut[13];
 static const char* label_lut[13] =
 {
@@ -121,6 +73,7 @@ static void draw_tile(cairo_t *ctx, cell_t *cell)
    int x, y;
    int w = TILE_SIZE, h = TILE_SIZE;
    int font_size = FONT_SIZE;
+   float *frame_time = game_get_frame_time();
 
    if (cell->value && cell->move_time < 1)
    {
@@ -136,7 +89,7 @@ static void draw_tile(cairo_t *ctx, cell_t *cell)
       if (cell->move_time < 0.5 && cell->source)
          draw_tile(ctx, cell->source);
 
-      cell->move_time += frame_time * TILE_ANIM_SPEED;
+      cell->move_time += *frame_time * TILE_ANIM_SPEED;
    }
    else if (cell->appear_time < 1)
    {
@@ -151,7 +104,7 @@ static void draw_tile(cairo_t *ctx, cell_t *cell)
       x += TILE_SIZE/2 - w/2;
       y += TILE_SIZE/2 - h/2;
 
-      cell->appear_time += frame_time * TILE_ANIM_SPEED;
+      cell->appear_time += *frame_time * TILE_ANIM_SPEED;
    } else {
       grid_to_screen(cell->pos, &x, &y);
    }
@@ -172,286 +125,6 @@ static void draw_tile(cairo_t *ctx, cell_t *cell)
       set_rgb(ctx, 119, 110, 101);
       draw_text_centered(ctx, label_lut[cell->value], x, y, w, h);
    }
-}
-
-static void change_state(game_state_t state);
-static void add_tile(void)
-{
-   int i, j;
-   cell_t *empty[GRID_SIZE];
-
-   if (game.state != STATE_PLAYING)
-      return;
-
-   j = 0;
-   for (i = 0; i < GRID_SIZE; i++)
-   {
-      empty[j] = NULL;
-      if (!game.grid[i].value)
-         empty[j++] = &game.grid[i];
-   }
-
-   if (j)
-   {
-      j = rand() % j;
-      empty[j]->old_pos = empty[j]->pos;
-      empty[j]->source = NULL;
-      empty[j]->move_time = 1;
-      empty[j]->appear_time = 0;
-      empty[j]->value = (rand() / RAND_MAX) < 0.9 ? 1 : 2;
-   }
-   else
-      change_state(STATE_GAME_OVER);
-}
-
-static void start_game(void)
-{
-   int row, col;
-   game.score = 0;
-
-   for (row = 0; row < 4; row++)
-   {
-      for (col = 0; col < 4; col++)
-      {
-         cell_t *cell = &game.grid[row * 4 + col];
-
-         cell->pos.x = col;
-         cell->pos.y = row;
-         cell->old_pos = cell->pos;
-         cell->move_time = 1;
-         cell->appear_time = 0;
-         cell->value = 0;
-         cell->source = NULL;
-      }
-   }
-
-   // reset +score animation
-   delta_score    = 0;
-   delta_score_time = 1;
-
-   add_tile();
-   add_tile();
-}
-
-static void end_game(void)
-{
-   game.best_score = game.score > game.best_score ? game.score : game.best_score;
-}
-
-static void change_state(game_state_t state)
-{
-   switch (game.state) {
-   case STATE_TITLE:
-   case STATE_GAME_OVER:
-      assert(state == STATE_PLAYING);
-      game.state = state;
-      start_game();
-      break;
-   case STATE_PLAYING:
-      assert(state == STATE_GAME_OVER || state == STATE_WON || state == STATE_PAUSED);
-      if (state != STATE_PAUSED)
-         end_game();
-      break;
-   case STATE_WON:
-      assert(state == STATE_TITLE);
-      break;
-   case STATE_PAUSED:
-      assert(state == STATE_PLAYING || state == STATE_TITLE);
-   }
-
-   game.state = state;
-}
-
-static bool move_tiles(void)
-{
-   int vec_x, vec_y;
-
-   switch (game.direction)
-   {
-      case DIR_UP:
-         vec_x = 0; vec_y = -1;
-         break;
-      case DIR_DOWN:
-         vec_x = 0; vec_y = 1;
-         break;
-      case DIR_RIGHT:
-         vec_x = 1; vec_y = 0;
-         break;
-      case DIR_LEFT:
-         vec_x = -1; vec_y = 0;
-         break;
-      default:
-         return false;
-         break;
-   }
-
-   int col_begin = 0;
-   int col_end   = 4;
-   int col_inc   = 1;
-   int row_begin = 0;
-   int row_end   = 4;
-   int row_inc   = 1;
-
-   if (vec_x > 0) {
-      col_begin = 3;
-      col_end   = -1;
-      col_inc   = -1;
-   }
-
-   if (vec_y > 0)
-   {
-      row_begin = 3;
-      row_end   = -1;
-      row_inc   = -1;
-   }
-
-   bool moved = false;
-
-   delta_score = game.score;
-
-   // clear source cell and save current position in the grid
-   for (int row = row_begin; row != row_end; row += row_inc)
-   {
-      for (int col = col_begin; col != col_end; col += col_inc)
-      {
-         cell_t *cell = &game.grid[row * 4 + col];
-         cell->old_pos = cell->pos;
-         cell->source = NULL;
-         cell->move_time = 1;
-         cell->appear_time = 1;
-      }
-   }
-
-   for (int row = row_begin; row != row_end; row += row_inc)
-   {
-      for (int col = col_begin; col != col_end; col += col_inc)
-      {
-         cell_t *cell = &game.grid[row * 4 + col];
-         if (!cell->value)
-            continue;
-
-         cell_t *farthest;
-         cell_t *next = cell;
-
-         int new_row = row , new_col = col;
-
-         do
-         {
-            farthest = next;
-
-            new_row += vec_y;
-            new_col += vec_x;
-
-            if (new_row < 0 || new_col < 0 || new_row > 3 || new_col > 3)
-               break;
-
-            next = &game.grid[new_row * 4 + new_col];
-         } while (!next->value);
-
-         // only tiles that have not been merged
-         if (next->value && next->value == cell->value && next != cell && !next->source)
-         {
-            next->value = cell->value + 1;
-            next->source = cell;
-            next->old_pos = cell->pos;
-            next->move_time = 0;
-            cell->value = 0;
-
-            game.score += 2 << next->value;
-            moved = true;
-
-            if (next->value == 11)
-               game.state = STATE_WON;
-         }
-         else if (farthest != cell)
-         {
-            farthest->value = cell->value;
-            farthest->old_pos = cell->pos;
-            farthest->move_time = 0;
-            cell->value = 0;
-            moved = true;
-         }
-      }
-   }
-
-   delta_score      = game.score - delta_score;
-   delta_score_time = delta_score == 0 ? 1 : 0;
-
-   return moved;
-}
-
-static bool cells_available(void)
-{
-   int row, col;
-   for (row = 0; row < GRID_HEIGHT; row++)
-   {
-      for (col = 0; col < GRID_WIDTH; col++)
-      {
-         if (!game.grid[row * GRID_WIDTH + col].value)
-            return true;
-      }
-   }
-
-   return false;
-}
-
-static bool matches_available(void)
-{
-   int row, col;
-   for (row = 0; row < GRID_HEIGHT; row++)
-   {
-      for (col = 0; col < GRID_WIDTH; col++)
-      {
-         cell_t *cell = &game.grid[row * GRID_WIDTH + col];
-
-         if (!cell->value)
-            continue;
-
-         if ((col > 0 && game.grid[row * GRID_WIDTH + col - 1].value == cell->value) ||
-             (col < GRID_WIDTH - 1 && game.grid[row * GRID_WIDTH + col + 1].value == cell->value) ||
-             (row > 0 && game.grid[(row - 1) * GRID_WIDTH + col].value == cell->value) ||
-             (row < GRID_HEIGHT - 1 && game.grid[(row + 1) * GRID_WIDTH + col].value == cell->value))
-            return true;
-      }
-   }
-
-   return false;
-}
-
-static void handle_input(key_state_t *ks)
-{
-   game.direction = DIR_NONE;
-
-   if (game.state == STATE_TITLE || game.state == STATE_GAME_OVER || game.state == STATE_WON)
-   {
-      if (!ks->start && game.old_ks.start)
-         change_state(game.state == STATE_WON ? STATE_TITLE : STATE_PLAYING);
-   }
-   else if (game.state == STATE_PLAYING)
-   {
-      if (!ks->up && game.old_ks.up)
-         game.direction = DIR_UP;
-      else if (!ks->right && game.old_ks.right)
-         game.direction = DIR_RIGHT;
-      else if (!ks->down && game.old_ks.down)
-         game.direction = DIR_DOWN;
-      else if (!ks->left && game.old_ks.left)
-         game.direction = DIR_LEFT;
-      else if (ks->start && !game.old_ks.start)
-         change_state(STATE_PAUSED);
-   }
-   else if (game.state == STATE_PAUSED)
-   {
-      if (ks->start && !game.old_ks.start)
-         change_state(STATE_PLAYING);
-      else if (ks->select && !game.old_ks.select)
-      {
-         game.state = STATE_PLAYING;
-         start_game();;
-      }
-   }
-
-   game.old_ks = *ks;
 }
 
 void game_calculate_pitch(void)
@@ -549,9 +222,7 @@ void game_init(void)
    init_luts();
    init_static_surface();
 
-   memset(&game, 0, sizeof(game));
-
-   game.state = STATE_TITLE;
+   init_game();
    start_game();
 }
 
@@ -577,66 +248,12 @@ void game_deinit(void)
    frame_buf = NULL;
 }
 
-void game_reset(void)
+void render_playing(void)
 {
-   start_game();
-}
-
-void game_update(float delta, key_state_t *new_ks)
-{
-   frame_time = delta;
-
-   handle_input(new_ks);
-
-   if (game.state == STATE_PLAYING)
-   {
-      if (game.direction != DIR_NONE && move_tiles())
-         add_tile();
-
-      if (!matches_available() && !cells_available())
-         change_state(STATE_GAME_OVER);
-   }
-}
-
-void *game_data()
-{
-   return &game;
-}
-
-void *game_save_data(void)
-{
-   int row, col;
-
-   // stop animations
-   for (row = 0; row < 4; row++)
-   {
-      for (col = 0; col < 4; col++)
-      {
-         game.grid[row * 4 + col].appear_time = 1;
-         game.grid[row * 4 + col].move_time   = 1;
-      }
-   }
-
-   delta_score_time = 1;
-
-   // show title screen when the game gets loaded again.
-   if (game.state != STATE_PLAYING && game.state != STATE_PAUSED)
-   {
-      game.score = 0;
-      game.state = STATE_TITLE;
-   }
-
-   return &game;
-}
-
-unsigned game_data_size(void)
-{
-   return sizeof(game);
-}
-
-static void render_playing(void)
-{
+   int *delta_score;
+   float *delta_score_time;
    char tmp[10] = {0};
+   float *frame_time = game_get_frame_time();
 
    // paint static background
    cairo_set_source_surface(ctx, static_surface, 0, 0);
@@ -647,10 +264,10 @@ static void render_playing(void)
 
    // score and best score value
    set_rgb(ctx, 255, 255, 255);
-   sprintf(tmp, "%i", game.score % 1000000);
+   sprintf(tmp, "%i", game_get_score() % 1000000);
    draw_text_centered(ctx, tmp, SPACING*2, SPACING * 5, TILE_SIZE*2, 0);
 
-   sprintf(tmp, "%i", game.best_score % 1000000);
+   sprintf(tmp, "%i", game_get_best_score() % 1000000);
    cairo_set_source(ctx, color_lut[1]);
    draw_text_centered(ctx, tmp, TILE_SIZE*2+SPACING*5, SPACING * 5, TILE_SIZE*2, 0);
 
@@ -658,15 +275,19 @@ static void render_playing(void)
    {
       for (int col = 0; col < 4; col++)
       {
-         cell_t *cell = &game.grid[row * 4 + col];
+         cell_t *grid = game_get_grid();
+         cell_t *cell = &grid[row * 4 + col];
 
          if (cell->value)
             draw_tile(ctx, cell);
       }
    }
 
+   delta_score_time = game_get_delta_score_time();
+   delta_score = game_get_delta_score();
+
    // draw +score animation
-   if (delta_score_time < 1)
+   if (*delta_score_time < 1)
    {
       cairo_select_font_face(ctx, FONT, CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
       cairo_set_font_size(ctx, FONT_SIZE * 1.2);
@@ -674,20 +295,20 @@ static void render_playing(void)
       int x = SPACING * 2;
       int y = SPACING * 5;
 
-      y = lerp(y, y - TILE_SIZE, delta_score_time);
+      y = lerp(y, y - TILE_SIZE, *delta_score_time);
 
-      set_rgba(ctx, 119, 110, 101, lerp(1, 0, delta_score_time));
+      set_rgba(ctx, 119, 110, 101, lerp(1, 0, *delta_score_time));
 
-      sprintf(tmp, "+%i", delta_score);
+      sprintf(tmp, "+%i", *delta_score);
       draw_text_centered(ctx, tmp, x, y, TILE_SIZE * 2, TILE_SIZE);
 
-      delta_score_time += frame_time;
+      *delta_score_time += *frame_time;
    }
 
    cairo_surface_flush(surface);
 }
 
-static void render_title(void)
+void render_title(void)
 {
    // bg
    set_rgb(ctx, 250, 248, 239);
@@ -712,9 +333,11 @@ static void render_title(void)
 
 }
 
-static void render_win_or_game_over(void)
+void render_win_or_game_over(void)
 {
-   if (game.state == STATE_GAME_OVER)
+   game_state_t state = game_get_state();
+
+   if (state == STATE_GAME_OVER)
       render_playing();
 
    // bg
@@ -725,7 +348,7 @@ static void render_win_or_game_over(void)
    cairo_set_font_size(ctx, FONT_SIZE * 2);
 
    set_rgb(ctx, 185, 172, 159);
-   draw_text_centered(ctx, (game.state == STATE_GAME_OVER ? "Game Over" : "You Win"), 0, 0, SCREEN_WIDTH, TILE_SIZE*3);
+   draw_text_centered(ctx, (state == STATE_GAME_OVER ? "Game Over" : "You Win"), 0, 0, SCREEN_WIDTH, TILE_SIZE*3);
 
    cairo_select_font_face(ctx, FONT, CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
    cairo_set_font_size(ctx, FONT_SIZE);
@@ -733,7 +356,7 @@ static void render_win_or_game_over(void)
    set_rgb(ctx, 185, 172, 159);
    char tmp[100];
 
-   sprintf(tmp, "Score: %i", game.score);
+   sprintf(tmp, "Score: %i", game_get_score());
    draw_text_centered(ctx, tmp, 0, 0, SCREEN_WIDTH, TILE_SIZE*5);
 
    set_rgb(ctx, 185, 172, 159);
@@ -743,7 +366,7 @@ static void render_win_or_game_over(void)
                       SCREEN_HEIGHT - TILE_SIZE * 2 - SPACING * 2, FONT_SIZE * 3 - SPACING * 2);
 }
 
-static void render_paused(void)
+void render_paused(void)
 {
    render_playing();
 
@@ -763,7 +386,7 @@ static void render_paused(void)
    set_rgb(ctx, 185, 172, 159);
    char tmp[100];
 
-   sprintf(tmp, "Score: %i", game.score);
+   sprintf(tmp, "Score: %i", game_get_score());
    draw_text_centered(ctx, tmp, 0, 0, SCREEN_WIDTH, TILE_SIZE*5);
 
    set_rgb(ctx, 185, 172, 159);
@@ -790,14 +413,6 @@ int game_init_pixelformat(void)
 
 void game_render(void)
 {
-   if (game.state == STATE_PLAYING)
-      render_playing();
-   else if (game.state == STATE_TITLE)
-      render_title();
-   else if (game.state == STATE_GAME_OVER || game.state == STATE_WON)
-      render_win_or_game_over();
-   else if (game.state == STATE_PAUSED)
-      render_paused();
-
+   render_game();
    video_cb(frame_buf, SCREEN_WIDTH, SCREEN_HEIGHT, SCREEN_PITCH);
 }
