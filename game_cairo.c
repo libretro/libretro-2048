@@ -330,6 +330,7 @@ void render_title(void)
 
 void render_win_or_game_over(void)
 {
+   char tmp[100];
    game_state_t state = game_get_state();
 
    if (state == STATE_GAME_OVER)
@@ -349,7 +350,6 @@ void render_win_or_game_over(void)
    cairo_set_font_size(ctx, FONT_SIZE);
 
    set_rgb(ctx, 185, 172, 159);
-   char tmp[100];
 
    sprintf(tmp, "Score: %i", game_get_score());
    draw_text_centered(ctx, tmp, 0, 0, SCREEN_WIDTH, TILE_SIZE*5);
@@ -363,6 +363,7 @@ void render_win_or_game_over(void)
 
 void render_paused(void)
 {
+   char tmp[100];
    render_playing();
 
    // bg
@@ -379,7 +380,6 @@ void render_paused(void)
    cairo_set_font_size(ctx, FONT_SIZE);
 
    set_rgb(ctx, 185, 172, 159);
-   char tmp[100];
 
    sprintf(tmp, "Score: %i", game_get_score());
    draw_text_centered(ctx, tmp, 0, 0, SCREEN_WIDTH, TILE_SIZE*5);
