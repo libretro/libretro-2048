@@ -88,8 +88,8 @@ ctx_t nullctx={0,0,0};
 
 int VIRTUAL_WIDTH;
 
-void initgraph(){
-
+void initgraph(void)
+{
 	VIRTUAL_WIDTH=SCREEN_WIDTH;
 	printf("GW:%d GH:%d  GSZ:%d\n",GRID_WIDTH,GRID_HEIGHT,GRID_SIZE);
 	printf("SP:%d TSZ:%d\n",SPACING,TILE_SIZE);
@@ -97,24 +97,24 @@ void initgraph(){
 	printf("size:%dx%dx%d \n",SCREEN_WIDTH,SCREEN_HEIGHT,SCREEN_PITCH);
 }
 
-void DrawFBoxBmp(char  *buffer,int x,int y,int dx,int dy,unsigned   color){
-	
-	int i,j,idx;
-			
+void DrawFBoxBmp(char  *buffer,int x,int y,int dx,int dy,unsigned color)
+{
+   int i,j,idx;
+
 #if defined PITCH && PITCH == 4
-unsigned *mbuffer=(unsigned*)buffer;
+   unsigned *mbuffer=(unsigned*)buffer;
 #else
-unsigned short *mbuffer=(unsigned short *)buffer;
+   unsigned short *mbuffer=(unsigned short *)buffer;
 #endif
 
-	for(i=x;i<x+dx;i++){
-		for(j=y;j<y+dy;j++){
-			
-			idx=i+j*VIRTUAL_WIDTH;
-			mbuffer[idx]=color;	
-		}
-	}
-	
+   for(i=x;i<x+dx;i++){
+      for(j=y;j<y+dy;j++){
+
+         idx=i+j*VIRTUAL_WIDTH;
+         mbuffer[idx]=color;	
+      }
+   }
+
 }
 
 #include "noncairo/font2.c"
@@ -593,9 +593,8 @@ static void init_luts(void)
    color_lut[12] = RGB32(60,58,50,255);//cairo_pattern_create_rgb(60 / 255.0, 58 / 255.0, 50 / 255.0);
 }
 
-static void init_static_surface()
+static void init_static_surface(void)
 {
-
    int static_ctx;
    static_ctx = 0;
 
