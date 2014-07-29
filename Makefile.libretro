@@ -41,6 +41,13 @@ else ifeq ($(platform), emscripten)
    TARGET := $(TARGET_NAME)_libretro_emscripten.so
    fpic := -fPIC
    SHARED := -shared -Wl,--no-undefined
+else ifeq ($(platform), psp1)
+   TARGET := $(TARGET_NAME)_libretro_psp1.a
+   CC = psp-gcc$(EXE_EXT)
+   CXX = psp-g++$(EXE_EXT)
+   AR = psp-ar$(EXE_EXT)
+   PLATFORM_DEFINES := -DPSP -G0
+   STATIC_LINKING = 1
 else
    CC = gcc
    TARGET := $(TARGET_NAME)_retro.dll
@@ -54,7 +61,7 @@ else
 endif
 
 OBJECTS := libretro.o game_noncairo.o game_shared.o
-CFLAGS += -Wall -pedantic $(fpic)
+CFLAGS += -Wall -pedantic $(fpic) $(PLATFORM_DEFINES)
 
 CFLAGS += 
 LFLAGS := 
@@ -74,7 +81,11 @@ endif
 all: $(TARGET)
 
 $(TARGET): $(OBJECTS) 
+ifeq ($(STATIC_LINKING), 1)
+	$(AR) rcs $@ $(OBJECTS)
+else
 	$(CC) $(fpic) $(SHARED) $(INCLUDES) $(LFLAGS) -o $@ $(OBJECTS) $(LIBS)
+endif
 
 %.o: %.c
 	$(CC) $(CFLAGS) -c -o $@ $<
