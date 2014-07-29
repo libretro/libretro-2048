@@ -1,6 +1,4 @@
-
 #include "game.h"
-#include "libretro.h"
 
 #include <stdint.h>
 #include <string.h>
@@ -75,6 +73,8 @@ static const char* label_lut[13] =
    "512", "1024", "2048",
    "XXX"
 };
+
+static uint16_t *frame_buf;
 
 static void set_rgb(cairo_t *ctx, int r, int g, int b)
 {
@@ -546,8 +546,9 @@ static void init_static_surface()
    cairo_destroy(static_ctx);
 }
 
-void game_init(uint16_t *frame_buf)
+void game_init(void)
 {
+   frame_buf = calloc(SCREEN_HEIGHT, SCREEN_PITCH);
    srand(time(NULL));
 
    surface = cairo_image_surface_create_for_data(
@@ -567,7 +568,8 @@ void game_init(uint16_t *frame_buf)
 
 void game_deinit(void)
 {
-   for (int i = 0; i < 13; i++)
+   int i;
+   for (i = 0; i < 13; i++)
    {
       cairo_pattern_destroy(color_lut[i]);
       color_lut[i] = NULL;
@@ -580,6 +582,10 @@ void game_deinit(void)
    ctx     = NULL;
    surface = NULL;
    static_surface = NULL;
+
+   if (frame_buf)
+      free(frame_buf);
+   frame_buf = NULL;
 }
 
 void game_reset(void)
@@ -778,6 +784,18 @@ static void render_paused(void)
                       SCREEN_HEIGHT - TILE_SIZE * 2 - SPACING * 2, FONT_SIZE * 3 - SPACING * 2);
 }
 
+int game_init_pixelformat(void)
+{
+   enum retro_pixel_format fmt = RETRO_PIXEL_FORMAT_RGB565;
+   if (!environ_cb(RETRO_ENVIRONMENT_SET_PIXEL_FORMAT, &fmt))
+   {
+      logging.log(RETRO_LOG_INFO, "RGB565 is not supported.\n");
+      return 0;
+   }
+
+   return 1;
+}
+
 void game_render(void)
 {
    if (game.state == STATE_PLAYING)
@@ -788,4 +806,6 @@ void game_render(void)
       render_win_or_game_over();
    else if (game.state == STATE_PAUSED)
       render_paused();
+
+   video_cb(frame_buf, SCREEN_WIDTH, SCREEN_HEIGHT, SCREEN_PITCH);
 }

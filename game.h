@@ -2,6 +2,7 @@
 #define GAME_H
 
 #include <stdint.h>
+#include "libretro.h"
 
 #define FONT "cairo:monospace"
 #define FONT_SIZE 20
@@ -34,15 +35,20 @@ typedef struct
    int select;
 } key_state_t;
 
+extern retro_environment_t environ_cb;
+extern retro_video_refresh_t video_cb;
+extern struct retro_log_callback logging;
+
 void game_calculate_pitch(void);
 
-void game_init(uint16_t *frame_buf);
+void game_init(void);
 void game_deinit(void);
 void game_reset(void);
 void game_update(float delta, key_state_t *new_ks);
-void *game_data();
-void *game_save_data();
-unsigned game_data_size();
+void *game_data(void);
+void *game_save_data(void);
+unsigned game_data_size(void);
 void game_render(void);
+int game_init_pixelformat(void);
 
 #endif // GAME_H

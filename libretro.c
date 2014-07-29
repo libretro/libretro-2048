@@ -1,4 +1,3 @@
-#include "libretro.h"
 #include "game.h"
 
 #include <stdint.h>
@@ -9,13 +8,11 @@
 #include <stdarg.h>
 #include <errno.h>
 
-static uint16_t *frame_buf;
-
-static struct retro_log_callback logging;
-static retro_video_refresh_t video_cb;
+struct retro_log_callback logging;
+retro_video_refresh_t video_cb;
 static retro_audio_sample_t audio_cb;
 static retro_audio_sample_batch_t audio_batch_cb;
-static retro_environment_t environ_cb;
+retro_environment_t environ_cb;
 static retro_input_poll_t input_poll_cb;
 static retro_input_state_t input_state_cb;
 
@@ -34,9 +31,7 @@ void retro_init(void)
 {
    game_calculate_pitch();
 
-   frame_buf = calloc(SCREEN_HEIGHT, SCREEN_PITCH);
-
-   game_init(frame_buf);
+   game_init();
 
    char *savedir;
    environ_cb(RETRO_ENVIRONMENT_GET_SAVE_DIRECTORY, &savedir);
@@ -85,9 +80,6 @@ void retro_deinit(void)
 
 
    game_deinit();
-
-   free(frame_buf);
-   frame_buf = NULL;
 }
 
 unsigned retro_api_version(void)
@@ -183,8 +175,6 @@ void retro_run(void)
 
    game_update(frame_time, &ks);
    game_render();
-
-   video_cb(frame_buf, SCREEN_WIDTH, SCREEN_HEIGHT, SCREEN_PITCH);
 }
 
 bool retro_load_game(const struct retro_game_info *info)
@@ -201,12 +191,8 @@ bool retro_load_game(const struct retro_game_info *info)
 
    environ_cb(RETRO_ENVIRONMENT_SET_INPUT_DESCRIPTORS, desc);
 
-   enum retro_pixel_format fmt = RETRO_PIXEL_FORMAT_RGB565;
-   if (!environ_cb(RETRO_ENVIRONMENT_SET_PIXEL_FORMAT, &fmt))
-   {
-      logging.log(RETRO_LOG_INFO, "RGB565 is not supported.\n");
+   if (!game_init_pixelformat())
       return false;
-   }
 
    struct retro_frame_time_callback frame_cb = { frame_time_cb, 1000000 / 60 };
    frame_cb.callback(frame_cb.reference);
