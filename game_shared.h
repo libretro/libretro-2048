@@ -23,4 +23,6 @@ int *game_get_delta_score(void);
 float *game_get_delta_score_time(void);
 float *game_get_frame_time(void);
 
+void grid_to_screen(vector_t pos, int *x, int *y);
+
 #endif

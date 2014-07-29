@@ -26,7 +26,8 @@ static const char* label_lut[13] =
 
 static unsigned *frame_buf;
 
-typedef struct ctx_t{
+typedef struct ctx_t
+{
    unsigned int color;
    int fontsize_x;
    int fontsize_y;
@@ -89,27 +90,31 @@ void Draw_string(char *surf, signed short int x, signed short int y, const unsig
    unsigned short *mbuffer=(unsigned short *)surf;
 #endif
 
-   if(string==NULL)return;
-   for(strlen = 0; strlen<maxstrlen && string[strlen]; strlen++) {}
+   if(string == NULL)
+      return;
+   for(strlen = 0; strlen<maxstrlen && string[strlen]; strlen++)
+   {}
 
    int surfw=strlen * 7 * xscale;
    int surfh=8 * yscale;
 
 #if defined PITCH && PITCH == 4	
 
-   linesurf =malloc(sizeof(unsigned )*surfw*surfh );
+   linesurf = malloc(sizeof(unsigned ) * surfw * surfh);
    yptr = (unsigned *)&linesurf[0];
 #else 
-   linesurf =malloc(sizeof(unsigned short)*surfw*surfh );
+   linesurf = malloc(sizeof(unsigned short)* surfw * surfh);
    yptr = (unsigned short *)&linesurf[0];
 #endif
 
-   for(ypixel = 0; ypixel<8; ypixel++) {
-
-      for(col=0; col<strlen; col++) {
+   for(ypixel = 0; ypixel < 8; ypixel++)
+   {
+      for(col=0; col<strlen; col++)
+      {
          b = font_array[(string[col]^0x80)*8 + ypixel];
 
-         for(bit=0; bit<7; bit++, yptr++) {              
+         for(bit=0; bit<7; bit++, yptr++)
+         {              
             *yptr = (b & (1<<(7-bit))) ? fg : bg;
             for(xrepeat = 1; xrepeat < xscale; xrepeat++, yptr++)
                yptr[1] = *yptr;
@@ -130,10 +135,10 @@ void Draw_string(char *surf, signed short int x, signed short int y, const unsig
 
    for(yrepeat = y; yrepeat < y+ surfh; yrepeat++) 
       for(xrepeat = x; xrepeat< x+surfw; xrepeat++,yptr++)
-         if(*yptr!=0)mbuffer[xrepeat+yrepeat*VIRTUAL_WIDTH] = *yptr;
+         if(*yptr!=0)
+            mbuffer[xrepeat+yrepeat*VIRTUAL_WIDTH] = *yptr;
 
    free(linesurf);
-
 }
 
 void Draw_text(char *buffer,int x,int y,unsigned    fgcol,unsigned   int bgcol ,int scalex,int scaley , int max,const char *string,...)
@@ -187,12 +192,6 @@ static void draw_text_centered(int ctx, const char *utf8, int x, int y, int w, i
 
 }
 
-static void grid_to_screen(vector_t pos, int *x, int *y)
-{
-   *x = SPACING * 2 + ((TILE_SIZE + SPACING) * pos.x);
-   *y = BOARD_OFFSET_Y + SPACING + ((TILE_SIZE + SPACING) * pos.y);
-}
-
 static void draw_tile(int ctx, cell_t *cell)
 {
    int x, y;
@@ -200,9 +199,9 @@ static void draw_tile(int ctx, cell_t *cell)
    int font_size = FONT_SIZE;
    float *frame_time = game_get_frame_time();
 
-   if (cell->value && cell->move_time < 1) {
-      int x1, y1;
-      int x2, y2;
+   if (cell->value && cell->move_time < 1)
+   {
+      int x1, y1, x2, y2;
 
       grid_to_screen(cell->old_pos, &x1, &y1);
       grid_to_screen(cell->pos, &x2, &y2);
@@ -233,19 +232,21 @@ static void draw_tile(int ctx, cell_t *cell)
       grid_to_screen(cell->pos, &x, &y);
    }
 
-   if (cell->value)nullctx.color=color_lut[cell->value];
-   else nullctx.color=RGB32(205,192,180,255);
+   if (cell->value)
+      nullctx.color=color_lut[cell->value];
+   else
+      nullctx.color=RGB32(205,192,180,255);
 
    fill_rectangle(ctx, x, y, w, h);
 
-   if (cell->value) {
-
+   if (cell->value)
+   {
       if (cell->value < 6) // one or two digits
-     {nullctx_fontsize(3); } //  cairo_set_font_size(ctx, font_size * 2.0);
+         nullctx_fontsize(3);
       else if (cell->value < 10) // three digits
-     {nullctx_fontsize(2); }   //   cairo_set_font_size(ctx, font_size * 1.5);
+         nullctx_fontsize(2);
       else // four digits
-     {nullctx_fontsize(1); }   //   cairo_set_font_size(ctx, font_size);
+         nullctx_fontsize(1);
 
       set_rgb(ctx, 119, 110, 101);
       draw_text_centered(ctx, label_lut[cell->value], x, y, w, h);
@@ -279,7 +280,9 @@ static void init_luts(void)
 
 static void init_static_surface(void)
 {
+   int row, col;
    int static_ctx;
+   cell_t dummy;
    static_ctx = 0;
 
    // bg
@@ -308,15 +311,14 @@ static void init_static_surface(void)
    draw_text_centered(static_ctx, "BEST", TILE_SIZE*2+SPACING*5, SPACING*2, 0, 0);
 
    // draw background cells
-   cell_t dummy;
    dummy.move_time = 1;
    dummy.appear_time = 1;
    dummy.source = NULL;
    dummy.value = 0;
 
-   for (int row = 0; row < 4; row++)
+   for (row = 0; row < 4; row++)
    {
-      for (int col = 0; col < 4; col++)
+      for (col = 0; col < 4; col++)
       {
          dummy.pos.x = col;
          dummy.pos.y = row;
@@ -429,8 +431,10 @@ void render_title(void)
 
 void render_win_or_game_over(void)
 {
+   char tmp[100];
    game_state_t state = game_get_state();
    int ctx=0;
+
    if (state == STATE_GAME_OVER)
       render_playing();
 
@@ -445,7 +449,6 @@ void render_win_or_game_over(void)
    nullctx_fontsize(1);
  
    set_rgb(ctx, 185, 172, 159);
-   char tmp[100];
 
    sprintf(tmp, "Score: %i", game_get_score());
    draw_text_centered(ctx, tmp, 0, 0, SCREEN_WIDTH, TILE_SIZE*5);
@@ -461,7 +464,9 @@ void render_win_or_game_over(void)
 
 void render_paused(void)
 {
+   char tmp[100];
    int ctx=0;
+
    render_playing();
 
    // bg
@@ -474,7 +479,6 @@ void render_paused(void)
 
    nullctx_fontsize(1);
    set_rgb(ctx, 185, 172, 159);
-   char tmp[100];
 
    sprintf(tmp, "Score: %i", game_get_score());
    draw_text_centered(ctx, tmp, 0, 0, SCREEN_WIDTH, TILE_SIZE*5);

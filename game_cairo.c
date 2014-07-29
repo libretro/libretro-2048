@@ -62,12 +62,6 @@ static void draw_text_centered(cairo_t *ctx, const char *utf8, int x, int y, int
    draw_text(ctx, utf8, x + font_off_x, y + font_off_y);
 }
 
-static void grid_to_screen(vector_t pos, int *x, int *y)
-{
-   *x = SPACING * 2 + ((TILE_SIZE + SPACING) * pos.x);
-   *y = BOARD_OFFSET_Y + SPACING + ((TILE_SIZE + SPACING) * pos.y);
-}
-
 static void draw_tile(cairo_t *ctx, cell_t *cell)
 {
    int x, y;
@@ -155,6 +149,7 @@ static void init_luts(void)
 static void init_static_surface(void)
 {
    int row, col;
+   cell_t dummy;
    cairo_t *static_ctx;
 
    static_surface = cairo_image_surface_create(CAIRO_FORMAT_RGB16_565, SCREEN_WIDTH, SCREEN_HEIGHT);
@@ -188,7 +183,6 @@ static void init_static_surface(void)
    draw_text_centered(static_ctx, "BEST", TILE_SIZE*2+SPACING*5, SPACING*2, 0, 0);
 
    // draw background cells
-   cell_t dummy;
    dummy.move_time = 1;
    dummy.appear_time = 1;
    dummy.source = NULL;
@@ -229,6 +223,7 @@ void game_init(void)
 void game_deinit(void)
 {
    int i;
+
    for (i = 0; i < 13; i++)
    {
       cairo_pattern_destroy(color_lut[i]);

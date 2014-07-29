@@ -429,4 +429,8 @@ void game_reset(void)
    start_game();
 }
 
-
+void grid_to_screen(vector_t pos, int *x, int *y)
+{
+   *x = SPACING * 2 + ((TILE_SIZE + SPACING) * pos.x);
+   *y = BOARD_OFFSET_Y + SPACING + ((TILE_SIZE + SPACING) * pos.y);
+}
