@@ -38,8 +38,13 @@ void retro_init(void)
 
    if (savedir)
    {
+#ifdef _WIN32
+      char slash = '\\';
+#else
+      char slash = '/';
+#endif
       char filename[1024] = {0};
-      sprintf(filename, "%s/2048.srm", savedir);
+      sprintf(filename, "%s%c2048.srm", savedir, slash);
 
       FILE *fp = fopen(filename, "rb");
 
@@ -68,8 +73,13 @@ void retro_deinit(void)
 
    if (savedir)
    {
+#ifdef _WIN32
+      char slash = '\\';
+#else
+      char slash = '/';
+#endif
       char filename[1024] = {0};
-      sprintf(filename, "%s/2048.srm", savedir);
+      sprintf(filename, "%s%c2048.srm", savedir, slash);
 
       FILE *fp = fopen(filename, "wb");
 
