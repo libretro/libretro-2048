@@ -43,7 +43,7 @@ else ifeq ($(platform), emscripten)
    SHARED := -shared -Wl,--no-undefined
 else
    CC = gcc
-   TARGET := $(TARGET_NAME)_retro.dll
+   TARGET := $(TARGET_NAME)_libretro.dll
    SHARED := -shared -static-libgcc -static-libstdc++ -Wl,--no-undefined -s
 endif
 
