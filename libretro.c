@@ -126,7 +126,7 @@ void retro_get_system_info(struct retro_system_info *info)
 
 void retro_get_system_av_info(struct retro_system_av_info *info)
 {
-   info->timing.fps = 24.0;
+   info->timing.fps = 60.0;
    info->timing.sample_rate = 30000.0;
 
    info->geometry.base_width   = SCREEN_WIDTH;
