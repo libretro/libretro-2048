@@ -399,13 +399,13 @@ void handle_input(key_state_t *ks)
    }
    else if (game.state == STATE_PLAYING)
    {
-      if (!ks->up && game.old_ks.up)
+      if (ks->up && !game.old_ks.up)
          game.direction = DIR_UP;
-      else if (!ks->right && game.old_ks.right)
+      else if (ks->right && !game.old_ks.right)
          game.direction = DIR_RIGHT;
-      else if (!ks->down && game.old_ks.down)
+      else if (ks->down && !game.old_ks.down)
          game.direction = DIR_DOWN;
-      else if (!ks->left && game.old_ks.left)
+      else if (ks->left && !game.old_ks.left)
          game.direction = DIR_LEFT;
       else if (ks->start && !game.old_ks.start)
          change_state(STATE_PAUSED);
