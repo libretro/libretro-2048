@@ -2,8 +2,6 @@ LOCAL_PATH := $(call my-dir)
 
 include $(CLEAR_VARS)
 
-APP_DIR := ../
-
 LOCAL_MODULE    := retro
 
 ifeq ($(TARGET_ARCH),arm)
@@ -19,7 +17,11 @@ ifeq ($(TARGET_ARCH),mips)
 LOCAL_CFLAGS += -DANDROID_MIPS -D__mips__ -D__MIPSEL__
 endif
 
-LOCAL_SRC_FILES    += $(APP_DIR)/libretro.c $(APP_DIR)/game_noncairo.c $(APP_DIR)/game_shared.c
+CORE_DIR := ..
+
+include $(CORE_DIR)/Makefile.common
+
+LOCAL_SRC_FILES    += $(SOURCES_C)
 LOCAL_CFLAGS += -O2 -std=gnu99 -DINLINE=inline -D__LIBRETRO__
 
 include $(BUILD_SHARED_LIBRARY)

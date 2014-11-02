@@ -64,7 +64,11 @@ else
    CFLAGS += -O3
 endif
 
-OBJECTS := libretro.o game_noncairo.o game_shared.o
+CORE_DIR := .
+
+include Makefile.common
+
+OBJECTS := $(SOURCES_C:.c=.o)
 CFLAGS += -Wall -pedantic $(fpic) $(PLATFORM_DEFINES)
 
 CFLAGS += 
