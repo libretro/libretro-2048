@@ -6,7 +6,7 @@
 
 #define FONT "cairo:monospace"
 #define FONT_SIZE 20
-#define SPACING    (FONT_SIZE * 0.4)
+#define SPACING    (int)(FONT_SIZE * 0.4)
 #define TILE_SIZE (FONT_SIZE * 4)
 #define TILE_ANIM_SPEED 5
 
