@@ -173,13 +173,6 @@ static void fill_rectangle(int ctx, int x, int y, int w, int h)
    DrawFBoxBmp(ptr, x, y, w, h, nullctx.color);
 }
 
-static void draw_text(int ctx, const char *utf8, int x, int y)
-{
-   char *ptr=(char*)frame_buf;
-   int size=strlen(utf8);
-   Draw_text(ptr,x,y,nullctx.color,0 ,nullctx.fontsize_x,nullctx.fontsize_y ,size, utf8);
-}
-
 static void draw_text_centered(int ctx, const char *utf8, int x, int y, int w, int h)
 {
 
