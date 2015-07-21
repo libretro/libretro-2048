@@ -328,8 +328,10 @@ static void init_static_surface(void)
 
 void game_init(void)
 {
+   unsigned int t = (unsigned int)time(NULL);
    frame_buf = calloc(SCREEN_HEIGHT, SCREEN_PITCH);
-   srand(time(NULL));
+
+   srand(t);
 
 	initgraph();
 

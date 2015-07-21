@@ -10,8 +10,12 @@
 
 retro_log_printf_t log_cb;
 retro_video_refresh_t video_cb;
+
+#if 0
 static retro_audio_sample_t audio_cb;
 static retro_audio_sample_batch_t audio_batch_cb;
+#endif
+
 retro_environment_t environ_cb;
 static retro_input_poll_t input_poll_cb;
 static retro_input_state_t input_state_cb;
@@ -158,12 +162,16 @@ void retro_set_environment(retro_environment_t cb)
 
 void retro_set_audio_sample(retro_audio_sample_t cb)
 {
+#if 0
    audio_cb = cb;
+#endif
 }
 
 void retro_set_audio_sample_batch(retro_audio_sample_batch_t cb)
 {
+#if 0
    audio_batch_cb = cb;
+#endif
 }
 
 void retro_set_input_poll(retro_input_poll_t cb)

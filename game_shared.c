@@ -217,7 +217,6 @@ static bool move_tiles(void)
          break;
       default:
          return false;
-         break;
    }
 
    col_begin = 0;
