@@ -69,8 +69,7 @@ else ifeq ($(platform), psp1)
    AR = psp-ar$(EXE_EXT)
    PLATFORM_DEFINES := -DPSP -G0
    STATIC_LINKING = 1
-else
-   CC = gcc
+else CC = gcc
    TARGET := $(TARGET_NAME)_libretro.dll
    SHARED := -shared -static-libgcc -static-libstdc++ -Wl,--no-undefined -s
 endif
@@ -91,12 +90,6 @@ CFLAGS += -Wall -pedantic $(fpic) $(PLATFORM_DEFINES)
 CFLAGS += 
 LFLAGS := 
 LDFLAGS += $(LIBM)
-
-ifeq ($(platform), qnx)
-   CFLAGS += -Wc,-std=gnu99
-else
-   CFLAGS += -std=gnu99
-endif
 
 ifeq ($(platform), osx)
 ifndef ($(NOUNIVERSAL))

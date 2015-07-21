@@ -22,7 +22,7 @@ static const char* label_lut[13] =
    "XXX"
 };
 
-// LAME DRAW TEXT and FILLRECT
+/* LAME DRAW TEXT and FILLRECT */
 
 static unsigned *frame_buf;
 
@@ -75,7 +75,7 @@ void DrawFBoxBmp(char  *buffer,int x,int y,int dx,int dy,unsigned color)
 
 void Draw_string(char *surf, signed short int x, signed short int y, const unsigned char *string,unsigned short maxstrlen,unsigned short xscale, unsigned short yscale, unsigned  fg, unsigned  bg)
 {
-   int strlen;
+   int strlen, surfw, surfh;
    unsigned char *linesurf;
    signed  int ypixel;
    unsigned  *yptr; 
@@ -95,8 +95,8 @@ void Draw_string(char *surf, signed short int x, signed short int y, const unsig
    for(strlen = 0; strlen<maxstrlen && string[strlen]; strlen++)
    {}
 
-   int surfw=strlen * 7 * xscale;
-   int surfh=8 * yscale;
+   surfw=strlen * 7 * xscale;
+   surfh=8 * yscale;
 
 #if defined PITCH && PITCH == 4	
 
@@ -192,6 +192,8 @@ static void draw_tile(int ctx, cell_t *cell)
    int font_size = FONT_SIZE;
    float *frame_time = game_get_frame_time();
 
+   (void)font_size;
+
    if (cell->value && cell->move_time < 1)
    {
       int x1, y1, x2, y2;
@@ -213,9 +215,11 @@ static void draw_tile(int ctx, cell_t *cell)
 
       w = h = bump_out(0, TILE_SIZE, cell->appear_time);
       font_size = bump_out(0, FONT_SIZE, cell->appear_time);
-      //      w = lerp(0, TILE_SIZE, cell->appear_time);
-      //      h = lerp(0, TILE_SIZE, cell->appear_time);
-      //      font_size = lerp(0, FONT_SIZE, cell->appear_time);
+#if 0
+      w = lerp(0, TILE_SIZE, cell->appear_time);
+      h = lerp(0, TILE_SIZE, cell->appear_time);
+      font_size = lerp(0, FONT_SIZE, cell->appear_time);
+#endif
 
       x += TILE_SIZE/2 - w/2;
       y += TILE_SIZE/2 - h/2;
@@ -234,11 +238,11 @@ static void draw_tile(int ctx, cell_t *cell)
 
    if (cell->value)
    {
-      if (cell->value < 6) // one or two digits
+      if (cell->value < 6) /* one or two digits */
          nullctx_fontsize(3);
-      else if (cell->value < 10) // three digits
+      else if (cell->value < 10) /* three digits */
          nullctx_fontsize(2);
-      else // four digits
+      else /* four digits */
          nullctx_fontsize(1);
 
       set_rgb(ctx, 119, 110, 101);
@@ -253,22 +257,22 @@ void game_calculate_pitch(void)
 
 static void init_luts(void)
 {
-   color_lut[0] = RGB32(238,228,218,90);//cairo_pattern_create_rgba(238 / 255.0, 228 / 255.0, 218 / 255.0, 0.35);
-   color_lut[1] = RGB32(238,228,218,255);//cairo_pattern_create_rgb(238 / 255.0, 228 / 255.0, 218 / 255.0);
+   color_lut[0] = RGB32(238,228,218,90);
+   color_lut[1] = RGB32(238,228,218,255);
 
-   color_lut[2] = RGB32(237,224,200,255);//cairo_pattern_create_rgb(237 / 255.0, 224 / 255.0, 200 / 255.0);
-   color_lut[3] = RGB32(242,177,121,255);//cairo_pattern_create_rgb(242 / 255.0, 177 / 255.0, 121 / 255.0);
-   color_lut[4] = RGB32(245,149,99,255);//cairo_pattern_create_rgb(245 / 255.0, 149 / 255.0, 99 / 255.0);
-   color_lut[5] = RGB32(246,124,95,255);//cairo_pattern_create_rgb(246 / 255.0, 124 / 255.0, 95 / 255.0);
-   color_lut[6] = RGB32(246,94,59,255);//cairo_pattern_create_rgb(246 / 255.0, 94 / 255.0, 59 / 255.0);
+   color_lut[2] = RGB32(237,224,200,255);
+   color_lut[3] = RGB32(242,177,121,255);
+   color_lut[4] = RGB32(245,149,99,255);
+   color_lut[5] = RGB32(246,124,95,255);
+   color_lut[6] = RGB32(246,94,59,255);
 
-   // TODO: shadow
-   color_lut[7] = RGB32(237,207,114,255);//cairo_pattern_create_rgb(237 / 255.0, 207 / 255.0, 114 / 255.0);
-   color_lut[8] = RGB32(237,204,97,255);//cairo_pattern_create_rgb(237 / 255.0, 204 / 255.0, 97 / 255.0);
-   color_lut[9] = RGB32(237,200,80,255);//cairo_pattern_create_rgb(237 / 255.0, 200 / 255.0, 80 / 255.0);
-   color_lut[10] = RGB32(237,197,63,255);//cairo_pattern_create_rgb(237 / 255.0, 197 / 255.0, 63 / 255.0);
-   color_lut[11] = RGB32(237,194,46,255);//cairo_pattern_create_rgb(237 / 255.0, 194 / 255.0, 46 / 255.0);
-   color_lut[12] = RGB32(60,58,50,255);//cairo_pattern_create_rgb(60 / 255.0, 58 / 255.0, 50 / 255.0);
+   /* TODO: shadow */
+   color_lut[7] = RGB32(237,207,114,255);
+   color_lut[8] = RGB32(237,204,97,255);
+   color_lut[9] = RGB32(237,200,80,255);
+   color_lut[10] = RGB32(237,197,63,255);
+   color_lut[11] = RGB32(237,194,46,255);
+   color_lut[12] = RGB32(60,58,50,255);
 }
 
 static void init_static_surface(void)
@@ -278,36 +282,36 @@ static void init_static_surface(void)
    cell_t dummy;
    static_ctx = 0;
 
-   // bg
+   /* bg */
    set_rgb(static_ctx, 250, 248, 239);
    fill_rectangle(static_ctx, 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
 
-   // grid bg
+   /* grid bg */
    set_rgb(static_ctx, 185, 172, 159);
    fill_rectangle(static_ctx, SPACING, BOARD_OFFSET_Y, BOARD_WIDTH, BOARD_WIDTH);
 
-   // score bg
+   /* score bg */
    set_rgb(static_ctx, 185, 172, 159);
    fill_rectangle(static_ctx, SPACING, SPACING, TILE_SIZE*2+SPACING*2, TILE_SIZE);
 
-   // best bg
+   /* best bg */
    set_rgb(static_ctx, 185, 172, 159);
    fill_rectangle(static_ctx, TILE_SIZE*2+SPACING*4, SPACING, TILE_SIZE*2+SPACING*2, TILE_SIZE);
 
    nullctx.color=color_lut[1];
    nullctx_fontsize(1) ;
 
-   // score title
+   /* score title */
    draw_text_centered(static_ctx, "SCORE", SPACING*2, SPACING * 2, 0, 0);
 
-   // best title
+   /* best title */
    draw_text_centered(static_ctx, "BEST", TILE_SIZE*2+SPACING*5, SPACING*2, 0, 0);
 
-   // draw background cells
-   dummy.move_time = 1;
+   /* draw background cells */
+   dummy.move_time   = 1;
    dummy.appear_time = 1;
-   dummy.source = NULL;
-   dummy.value = 0;
+   dummy.source      = NULL;
+   dummy.value       = 0;
 
    for (row = 0; row < 4; row++)
    {
@@ -347,15 +351,15 @@ void render_playing(void)
 {
    int *delta_score;
    float *delta_score_time;
+   int row, col, ctx=0;
    char tmp[10] = {0};
    float *frame_time = game_get_frame_time();
 
-   // paint static background
+   /* paint static background */
 
    nullctx_fontsize(2) ;
-   int ctx=0;
 
-   // score and best score value
+   /* score and best score value */
    set_rgb(ctx, 255, 255, 255);
    sprintf(tmp, "%i", game_get_score() % 1000000);
    draw_text_centered(ctx, tmp, SPACING*2, SPACING * 5, TILE_SIZE*2, 0);
@@ -365,9 +369,9 @@ void render_playing(void)
 
    draw_text_centered(ctx, tmp, TILE_SIZE*2+SPACING*5, SPACING * 5, TILE_SIZE*2, 0);
 
-   for (int row = 0; row < 4; row++)
+   for (row = 0; row < 4; row++)
    {
-      for (int col = 0; col < 4; col++)
+      for (col = 0; col < 4; col++)
       {
          cell_t *grid = game_get_grid();
          cell_t *cell = &grid[row * 4 + col];
@@ -380,14 +384,14 @@ void render_playing(void)
    delta_score_time = game_get_delta_score_time();
    delta_score = game_get_delta_score();
 
-   // draw +score animation
+   /* draw +score animation */
    if (*delta_score_time < 1)
    {
+      int x, y;
 
       nullctx_fontsize(1);
-      int x = SPACING * 2;
-      int y = SPACING * 5;
-
+      x = SPACING * 2;
+      y = SPACING * 5;
       y = lerp(y, y - TILE_SIZE, *delta_score_time);
 
       set_rgba(ctx, 119, 110, 101, lerp(1, 0, *delta_score_time));
@@ -402,7 +406,8 @@ void render_playing(void)
 void render_title(void)
 {
    int ctx=0;
-   // bg
+
+   /* bg */
    set_rgb(ctx, 250, 248, 239);
    fill_rectangle(ctx, 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
 
@@ -431,7 +436,7 @@ void render_win_or_game_over(void)
    if (state == STATE_GAME_OVER)
       render_playing();
 
-   // bg
+   /* bg */
    set_rgba(ctx, 250, 248, 239, 0.85);
    fill_rectangle(ctx, 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
 
@@ -462,7 +467,7 @@ void render_paused(void)
 
    render_playing();
 
-   // bg
+   /* bg */
    set_rgba(ctx, 250, 248, 239, 0.85);
    fill_rectangle(ctx, 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
 

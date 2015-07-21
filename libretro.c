@@ -20,8 +20,10 @@ float frame_time = 0;
 
 static void fallback_log(enum retro_log_level level, const char *fmt, ...)
 {
-   (void)level;
    va_list va;
+
+   (void)level;
+
    va_start(va, fmt);
    vfprintf(stderr, fmt, va);
    va_end(va);
@@ -29,15 +31,17 @@ static void fallback_log(enum retro_log_level level, const char *fmt, ...)
 
 void retro_init(void)
 {
+   char *savedir;
+
    game_calculate_pitch();
 
    game_init();
 
-   char *savedir;
    environ_cb(RETRO_ENVIRONMENT_GET_SAVE_DIRECTORY, &savedir);
 
    if (savedir)
    {
+      FILE *fp;
 #ifdef _WIN32
       char slash = '\\';
 #else
@@ -46,7 +50,7 @@ void retro_init(void)
       char filename[1024] = {0};
       sprintf(filename, "%s%c2048.srm", savedir, slash);
 
-      FILE *fp = fopen(filename, "rb");
+      fp = fopen(filename, "rb");
 
       if (fp)
       {
@@ -73,15 +77,16 @@ void retro_deinit(void)
 
    if (savedir)
    {
+      FILE *fp;
 #ifdef _WIN32
       char slash = '\\';
 #else
       char slash = '/';
 #endif
       char filename[1024] = {0};
-      sprintf(filename, "%s%c2048.srm", savedir, slash);
 
-      FILE *fp = fopen(filename, "wb");
+      sprintf(filename, "%s%c2048.srm", savedir, slash);
+      fp = fopen(filename, "wb");
 
       if (fp)
       {
@@ -121,7 +126,7 @@ void retro_get_system_info(struct retro_system_info *info)
    info->library_name     = "2048";
    info->library_version  = "v1.0";
    info->need_fullpath    = false;
-   info->valid_extensions = NULL; // Anything is fine, we don't care.
+   info->valid_extensions = NULL; /* Anything is fine, we don't care. */
 }
 
 void retro_get_system_av_info(struct retro_system_av_info *info)
@@ -139,9 +144,10 @@ void retro_get_system_av_info(struct retro_system_av_info *info)
 void retro_set_environment(retro_environment_t cb)
 {
    struct retro_log_callback logging;
+   bool no_rom = true;
+
    environ_cb = cb;
 
-   bool no_rom = true;
    cb(RETRO_ENVIRONMENT_SET_SUPPORT_NO_GAME, &no_rom);
 
    if (cb(RETRO_ENVIRONMENT_GET_LOG_INTERFACE, &logging))
@@ -204,6 +210,7 @@ void retro_run(void)
 
 bool retro_load_game(const struct retro_game_info *info)
 {
+   struct retro_frame_time_callback frame_cb;
    struct retro_input_descriptor desc[] = {
       { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_LEFT,  "Left" },
       { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_UP,    "Up" },
@@ -219,7 +226,8 @@ bool retro_load_game(const struct retro_game_info *info)
    if (!game_init_pixelformat())
       return false;
 
-   struct retro_frame_time_callback frame_cb = { frame_time_cb, 1000000 / 60 };
+   frame_cb.callback  = frame_time_cb;
+   frame_cb.reference = 1000000 / 60;
    frame_cb.callback(frame_cb.reference);
    environ_cb(RETRO_ENVIRONMENT_SET_FRAME_TIME_CALLBACK, &frame_cb);
 

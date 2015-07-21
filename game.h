@@ -97,4 +97,4 @@ void render_title(void);
 void render_win_or_game_over(void);
 void render_paused(void);
 
-#endif // GAME_H
+#endif /* GAME_H */

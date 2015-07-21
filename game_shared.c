@@ -7,25 +7,28 @@
 
 static game_t game;
 
-// score animations
+/* Score animations */
 static int delta_score;
 static float delta_score_time;
 static float frame_time = 0.016;
 
 #define PI 3.14159
 
-// out back bicubic
-// from http://www.timotheegroleau.com/Flash/experiments/easing_function_generator.htm
+/* out back bicubic
+ * from http://www.timotheegroleau.com/Flash/experiments/easing_function_generator.htm
+ */
 float bump_out(float v0, float v1, float t)
 {
-   t /= 1;// intensity (d)
+   float ts, tc;
 
-   float ts = t  * t;
-   float tc = ts * t;
+   t /= 1; /* intensity (d) */
+
+   ts = t  * t;
+   tc = ts * t;
    return v0 + v1 * (4*tc + -9*ts + 6*t);
 }
 
-// interpolation functions
+/* interpolation functions */
 float lerp(float v0, float v1, float t)
 {
    return v0 * (1 - t) + v1 * t;
@@ -48,7 +51,7 @@ void *game_save_data(void)
 {
    int row, col;
 
-   // stop animations
+   /* stop animations */
    for (row = 0; row < 4; row++)
    {
       for (col = 0; col < 4; col++)
@@ -60,7 +63,7 @@ void *game_save_data(void)
 
    delta_score_time = 1;
 
-   // show title screen when the game gets loaded again.
+   /* show title screen when the game gets loaded again. */
    if (game.state != STATE_PLAYING && game.state != STATE_PAUSED)
    {
       game.score = 0;
@@ -144,8 +147,8 @@ void start_game(void)
       }
    }
 
-   // reset +score animation
-   delta_score    = 0;
+   /* reset +score animation */
+   delta_score      = 0;
    delta_score_time = 1;
 
    add_tile();
@@ -192,7 +195,11 @@ static bool matches_available(void)
 
 static bool move_tiles(void)
 {
+   int row, col;
    int vec_x, vec_y;
+   int col_begin, col_end, col_inc;
+   int row_begin, row_end, row_inc;
+   bool moved = false;
 
    switch (game.direction)
    {
@@ -213,12 +220,12 @@ static bool move_tiles(void)
          break;
    }
 
-   int col_begin = 0;
-   int col_end   = 4;
-   int col_inc   = 1;
-   int row_begin = 0;
-   int row_end   = 4;
-   int row_inc   = 1;
+   col_begin = 0;
+   col_end   = 4;
+   col_inc   = 1;
+   row_begin = 0;
+   row_end   = 4;
+   row_inc   = 1;
 
    if (vec_x > 0) {
       col_begin = 3;
@@ -233,14 +240,12 @@ static bool move_tiles(void)
       row_inc   = -1;
    }
 
-   bool moved = false;
-
    delta_score = game.score;
 
-   // clear source cell and save current position in the grid
-   for (int row = row_begin; row != row_end; row += row_inc)
+   /* clear source cell and save current position in the grid */
+   for (row = row_begin; row != row_end; row += row_inc)
    {
-      for (int col = col_begin; col != col_end; col += col_inc)
+      for (col = col_begin; col != col_end; col += col_inc)
       {
          cell_t *cell = &game.grid[row * 4 + col];
          cell->old_pos = cell->pos;
@@ -250,18 +255,20 @@ static bool move_tiles(void)
       }
    }
 
-   for (int row = row_begin; row != row_end; row += row_inc)
+   for (row = row_begin; row != row_end; row += row_inc)
    {
-      for (int col = col_begin; col != col_end; col += col_inc)
+      for (col = col_begin; col != col_end; col += col_inc)
       {
+         int new_row, new_col;
+         cell_t *farthest, *next;
          cell_t *cell = &game.grid[row * 4 + col];
+
          if (!cell->value)
             continue;
 
-         cell_t *farthest;
-         cell_t *next = cell;
-
-         int new_row = row , new_col = col;
+         next    = cell;
+         new_row = row;
+         new_col = col;
 
          do
          {
@@ -276,7 +283,7 @@ static bool move_tiles(void)
             next = &game.grid[new_row * 4 + new_col];
          } while (!next->value);
 
-         // only tiles that have not been merged
+         /* only tiles that have not been merged */
          if (next->value && next->value == cell->value && next != cell && !next->source)
          {
             next->value = cell->value + 1;
