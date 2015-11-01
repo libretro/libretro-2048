@@ -162,6 +162,9 @@ LDFLAGS += $(LIBM)
 
 ifeq ($(platform), osx)
 ifndef ($(NOUNIVERSAL))
+ifndef ($(ARCHFLAGS))
+ARCHFLAGS := "-arch i386 -arch x86_64"
+endif
    CFLAGS += $(ARCHFLAGS)
    LFLAGS += $(ARCHFLAGS)
 endif
