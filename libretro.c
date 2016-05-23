@@ -65,6 +65,7 @@ void retro_init(void)
          if (log_cb)
             log_cb(RETRO_LOG_WARN, "[2048] unable to load game data: %s.\n", strerror(errno));
       }
+      free(savedir);
    }
    else
    {
@@ -101,6 +102,7 @@ void retro_deinit(void)
          if (log_cb)
             log_cb(RETRO_LOG_WARN, "[2048] unable to save game data: %s.\n", strerror(errno));
       }
+      free(savedir);
    }
    else
    {
