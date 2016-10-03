@@ -34,7 +34,7 @@ static void fallback_log(enum retro_log_level level, const char *fmt, ...)
 
 void retro_init(void)
 {
-   char *savedir;
+   char *savedir = NULL;
 
    game_calculate_pitch();
 
@@ -75,7 +75,7 @@ void retro_init(void)
 
 void retro_deinit(void)
 {
-   char *savedir;
+   char *savedir = NULL;
    environ_cb(RETRO_ENVIRONMENT_GET_SAVE_DIRECTORY, &savedir);
 
    if (savedir)
