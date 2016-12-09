@@ -29,8 +29,10 @@ else ifneq ($(findstring MINGW,$(shell uname -a)),)
 endif
 
 TARGET_NAME := 2048
-GIT_VERSION := "$(shell git describe --abbrev=7 --dirty --always --tags)"
-CFLAGS += -DGIT_VERSION=\"$(GIT_VERSION)\"
+GIT_VERSION := "$(shell git describe --abbrev=7 --dirty --always --tags || echo unknown)"
+ifneq ($(GIT_VERSION),"unknown")
+	CFLAGS += -DGIT_VERSION=\"$(GIT_VERSION)\"
+endif
 LIBM := -lm
 fpic=
 
