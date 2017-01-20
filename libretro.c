@@ -40,7 +40,7 @@ void retro_init(void)
 
    game_init();
 
-   environ_cb(RETRO_ENVIRONMENT_GET_SAVE_DIRECTORY, &savedir);
+   environ_cb(RETRO_ENVIRONMENT_GET_SYSTEM_DIRECTORY, &savedir);
 
    if (savedir)
    {
@@ -76,7 +76,7 @@ void retro_init(void)
 void retro_deinit(void)
 {
    char *savedir = NULL;
-   environ_cb(RETRO_ENVIRONMENT_GET_SAVE_DIRECTORY, &savedir);
+   environ_cb(RETRO_ENVIRONMENT_GET_SYSTEM_DIRECTORY, &savedir);
 
    if (savedir)
    {
