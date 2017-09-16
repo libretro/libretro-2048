@@ -373,7 +373,7 @@ include Makefile.common
 OBJECTS := $(SOURCES_C:.c=.o)
 CFLAGS += $(fpic) $(PLATFORM_DEFINES)
 
-CFLAGS += 
+CFLAGS += $(INCFLAGS)
 LFLAGS := 
 LDFLAGS += $(LIBM)
 
