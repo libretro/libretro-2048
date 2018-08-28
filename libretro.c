@@ -144,7 +144,7 @@ void retro_get_system_av_info(struct retro_system_av_info *info)
    info->geometry.base_height  = SCREEN_HEIGHT;
    info->geometry.max_width    = SCREEN_WIDTH;
    info->geometry.max_height   = SCREEN_HEIGHT;
-   info->geometry.aspect_ratio = 1;
+   info->geometry.aspect_ratio = 0.0;
 }
 
 void retro_set_environment(retro_environment_t cb)
