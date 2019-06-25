@@ -21,6 +21,8 @@ static retro_input_state_t input_state_cb;
 
 float frame_time = 0;
 
+static bool libretro_supports_bitmasks = false;
+
 static void fallback_log(enum retro_log_level level, const char *fmt, ...)
 {
    va_list va;
@@ -71,6 +73,9 @@ void retro_init(void)
          if (log_cb)
             log_cb(RETRO_LOG_WARN, "[2048] unable to load game data: save directory not set.\n");
    }
+
+   if (environ_cb(RETRO_ENVIRONMENT_GET_INPUT_BITMASKS, NULL))
+      libretro_supports_bitmasks = true;
 }
 
 void retro_deinit(void)
@@ -108,8 +113,9 @@ void retro_deinit(void)
          log_cb(RETRO_LOG_WARN, "[2048] unable to save game data: save directory not set.\n");
    }
 
-
    game_deinit();
+
+   libretro_supports_bitmasks = false;
 }
 
 unsigned retro_api_version(void)
@@ -203,16 +209,30 @@ static void frame_time_cb(retro_usec_t usec)
 
 void retro_run(void)
 {
+   int16_t ret = 0;
    key_state_t ks;
 
    input_poll_cb();
+   
+   if (libretro_supports_bitmasks)
+      ret = input_state_cb(0, RETRO_DEVICE_JOYPAD,
+            0, RETRO_DEVICE_ID_JOYPAD_MASK);
+   else
+   {
+      unsigned i;
+      for (i = 0; i < RETRO_DEVICE_ID_JOYPAD_RIGHT+1; i++)
+      {
+         if (input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, i))
+            ret |= (1 << i);
+      }
+   }
 
-   ks.up = input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_UP);
-   ks.right = input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_RIGHT);
-   ks.down = input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_DOWN);
-   ks.left = input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_LEFT);
-   ks.start = input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_START);
-   ks.select = input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_SELECT);
+   ks.up     = (ret & (1 << RETRO_DEVICE_ID_JOYPAD_UP));
+   ks.right  = (ret & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT));
+   ks.down   = (ret & (1 << RETRO_DEVICE_ID_JOYPAD_DOWN));
+   ks.left   = (ret & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT));
+   ks.start  = (ret & (1 << RETRO_DEVICE_ID_JOYPAD_START));
+   ks.select = (ret & (1 << RETRO_DEVICE_ID_JOYPAD_SELECT));
 
    game_update(frame_time, &ks);
    game_render();
