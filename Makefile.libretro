@@ -181,7 +181,6 @@ else ifeq ($(platform), ps2)
    CC = ee-gcc$(EXE_EXT)
    AR = ee-ar$(EXE_EXT)
    PLATFORM_DEFINES := -DPS2 -G0
-   CFLAGS := -Ips2
    STATIC_LINKING = 1
 
 # PSP
