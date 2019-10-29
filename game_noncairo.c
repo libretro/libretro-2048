@@ -33,7 +33,7 @@ typedef struct ctx_t
 } ctx_t;
 
 ctx_t nullctx={0,0,0};
- 
+
 #define PITCH 4
 #define RGB32(r, g, b,a)  ( (a)<<24 |((r) << (16)) | ((g) << 8) | ((b) << 0))
 #define nullctx_fontsize(a) nullctx.fontsize_x=nullctx.fontsize_y=a
@@ -64,7 +64,7 @@ void DrawFBoxBmp(char  *buffer,int x,int y,int dx,int dy,unsigned color)
       for(j = y; j < y + dy; j++)
       {
          idx= i + j * VIRTUAL_WIDTH;
-         mbuffer[idx] = color;	
+         mbuffer[idx] = color;
       }
    }
 
@@ -77,7 +77,7 @@ void Draw_string(char *surf, signed short int x, signed short int y, const unsig
    int strlen, surfw, surfh;
    unsigned char *linesurf;
    signed  int ypixel;
-   unsigned  *yptr; 
+   unsigned  *yptr;
    int col, bit;
    unsigned char b;
 
@@ -97,11 +97,11 @@ void Draw_string(char *surf, signed short int x, signed short int y, const unsig
    surfw=strlen * 7 * xscale;
    surfh=8 * yscale;
 
-#if defined PITCH && PITCH == 4	
+#if defined PITCH && PITCH == 4
 
    linesurf = malloc(sizeof(unsigned ) * surfw * surfh);
    yptr = (unsigned *)&linesurf[0];
-#else 
+#else
    linesurf = malloc(sizeof(unsigned short)* surfw * surfh);
    yptr = (unsigned short *)&linesurf[0];
 #endif
@@ -113,26 +113,26 @@ void Draw_string(char *surf, signed short int x, signed short int y, const unsig
          b = font_array[(string[col]^0x80)*8 + ypixel];
 
          for(bit=0; bit<7; bit++, yptr++)
-         {              
+         {
             *yptr = (b & (1<<(7-bit))) ? fg : bg;
             for(xrepeat = 1; xrepeat < xscale; xrepeat++, yptr++)
                yptr[1] = *yptr;
          }
       }
 
-      for(yrepeat = 1; yrepeat < yscale; yrepeat++) 
+      for(yrepeat = 1; yrepeat < yscale; yrepeat++)
          for(xrepeat = 0; xrepeat<surfw; xrepeat++, yptr++)
             *yptr = yptr[-surfw];
 
    }
 
-#if defined PITCH && PITCH == 4	
+#if defined PITCH && PITCH == 4
    yptr = (unsigned *)&linesurf[0];
-#else 
+#else
    yptr = (unsigned short*)&linesurf[0];
 #endif
 
-   for(yrepeat = y; yrepeat < y+ surfh; yrepeat++) 
+   for(yrepeat = y; yrepeat < y+ surfh; yrepeat++)
       for(xrepeat = x; xrepeat< x+surfw; xrepeat++,yptr++)
          if(*yptr!=0)
             mbuffer[xrepeat+yrepeat*VIRTUAL_WIDTH] = *yptr;
@@ -142,17 +142,17 @@ void Draw_string(char *surf, signed short int x, signed short int y, const unsig
 
 void Draw_text(char *buffer,int x,int y,unsigned    fgcol,unsigned   int bgcol ,int scalex,int scaley , int max,const char *string,...)
 {
-   char text[256];	   	
-   va_list	ap;	
+   char text[256];
+   va_list ap;
 
    if (string == NULL)
-      return;		
+      return;
 
-   va_start(ap, string);		
-   vsprintf(text, string, ap);	
-   va_end(ap);	
+   va_start(ap, string);
+   vsprintf(text, string, ap);
+   va_end(ap);
 
-   Draw_string(buffer, x,y,(unsigned char*) text,max, scalex, scaley,fgcol,bgcol);	
+   Draw_string(buffer, x,y,(unsigned char*) text,max, scalex, scaley,fgcol,bgcol);
 }
 
 
@@ -177,8 +177,8 @@ static void draw_text_centered(int ctx, const char *utf8, int x, int y, int w, i
 
    char *ptr=(char*)frame_buf;
    int size=strlen(utf8);
-   int foy=h?(8*nullctx.fontsize_y)/2 + h/2:8*nullctx.fontsize_y;
-   int fox=w?w/2 -(size*7*nullctx.fontsize_y)/2:0;
+   int foy = h ? (h - 8 * nullctx.fontsize_y) / 2 : 0;
+   int fox = w ? (w - size * 7 * nullctx.fontsize_x) / 2 : 0;
 
    Draw_text(ptr,x+fox,y+foy,nullctx.color,0 ,nullctx.fontsize_x,nullctx.fontsize_y ,size, utf8);
 
@@ -237,14 +237,14 @@ static void draw_tile(int ctx, cell_t *cell)
 
    if (cell->value)
    {
-      if (cell->value < 6) /* one or two digits */
+      if (cell->value < 10) /* one to three digits */
          nullctx_fontsize(3);
-      else if (cell->value < 10) /* three digits */
-         nullctx_fontsize(2);
       else /* four digits */
-         nullctx_fontsize(1);
-
-      set_rgb(ctx, 119, 110, 101);
+         nullctx_fontsize(2);
+      if (cell->value == 6) // Background of 64 is too dark
+         set_rgb(ctx, 255, 255, 255);
+      else
+         set_rgb(ctx, 119, 110, 101);
       draw_text_centered(ctx, label_lut[cell->value], x, y, w, h);
    }
 }
@@ -298,7 +298,7 @@ static void init_static_surface(void)
    fill_rectangle(static_ctx, TILE_SIZE*2+SPACING*4, SPACING, TILE_SIZE*2+SPACING*2, TILE_SIZE);
 
    nullctx.color=color_lut[1];
-   nullctx_fontsize(1) ;
+   nullctx_fontsize(3) ;
 
    /* score title */
    draw_text_centered(static_ctx, "SCORE", SPACING*2, SPACING * 2, 0, 0);
@@ -358,17 +358,16 @@ void render_playing(void)
 
    /* paint static background */
 
-   nullctx_fontsize(2) ;
+   nullctx_fontsize(3) ;
 
    /* score and best score value */
    set_rgb(ctx, 255, 255, 255);
    sprintf(tmp, "%i", game_get_score() % 1000000);
-   draw_text_centered(ctx, tmp, SPACING*2, SPACING * 5, TILE_SIZE*2, 0);
+   draw_text_centered(ctx, tmp, SPACING * 2,  SPACING * 2 + FONT_SIZE, TILE_SIZE * 2, TILE_SIZE - FONT_SIZE);
 
    sprintf(tmp, "%i", game_get_best_score() % 1000000);
    nullctx.color=color_lut[1];
-
-   draw_text_centered(ctx, tmp, TILE_SIZE*2+SPACING*5, SPACING * 5, TILE_SIZE*2, 0);
+   draw_text_centered(ctx, tmp, TILE_SIZE * 2 + SPACING * 5, SPACING * 2 + FONT_SIZE, TILE_SIZE * 2, TILE_SIZE - FONT_SIZE);
 
    for (row = 0; row < 4; row++)
    {
@@ -390,7 +389,7 @@ void render_playing(void)
    {
       int x, y;
 
-      nullctx_fontsize(1);
+      nullctx_fontsize(3);
       x = SPACING * 2;
       y = SPACING * 5;
       y = lerp(y, y - TILE_SIZE, *delta_score_time);
@@ -404,6 +403,38 @@ void render_playing(void)
    }
 }
 
+void render_button(int ctx, const char *text, int y)
+{
+   int x = SPACING;
+   int w = SCREEN_WIDTH - SPACING * 2;
+   int h = TILE_SIZE;
+
+   set_rgb(ctx, 185, 172, 159);
+   fill_rectangle(ctx, x, y, w, h);
+
+   nullctx_fontsize(3);
+   nullctx.color= color_lut[1];
+   draw_text_centered(ctx, text, x, y, w, h);
+}
+
+void render_heading(int ctx, const char *text)
+{
+   nullctx_fontsize(5) ;
+   set_rgb(ctx, 185, 172, 159);
+   draw_text_centered(ctx, text, 0, 0, SCREEN_WIDTH, TILE_SIZE * 3);
+}
+
+void render_score(int ctx)
+{
+   char tmp[100];
+   nullctx_fontsize(3);
+
+   set_rgb(ctx, 185, 172, 159);
+
+   sprintf(tmp, "SCORE %i", game_get_score());
+   draw_text_centered(ctx, tmp, 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
+}
+
 void render_title(void)
 {
    int ctx=0;
@@ -412,25 +443,13 @@ void render_title(void)
    set_rgb(ctx, 250, 248, 239);
    fill_rectangle(ctx, 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
 
-   nullctx_fontsize(5) ;
-   set_rgb(ctx, 185, 172, 159);
-   draw_text_centered(ctx, "2048", 0, 0, SCREEN_WIDTH, TILE_SIZE*3);
+   render_heading(ctx, "2048");
 
-
-   set_rgb(ctx, 185, 172, 159);
-   fill_rectangle(ctx, TILE_SIZE / 2, TILE_SIZE * 4, SCREEN_HEIGHT - TILE_SIZE * 2, FONT_SIZE * 3);
-
-   nullctx_fontsize(1);
-   nullctx.color= color_lut[1];
-
-   draw_text_centered(ctx, "PRESS START", TILE_SIZE / 2 + SPACING, TILE_SIZE * 4 + SPACING,
-                      SCREEN_HEIGHT - TILE_SIZE * 2 - SPACING * 2, FONT_SIZE * 3 - SPACING * 2);
-
+   render_button(ctx, "PRESS START", TILE_SIZE * 4);
 }
 
 void render_win_or_game_over(void)
 {
-   char tmp[100];
    game_state_t state = game_get_state();
    int ctx=0;
 
@@ -441,29 +460,15 @@ void render_win_or_game_over(void)
    set_rgba(ctx, 250, 248, 239, 0.85);
    fill_rectangle(ctx, 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
 
-   nullctx_fontsize(2); 
-   set_rgb(ctx, 185, 172, 159);
-   draw_text_centered(ctx, (state == STATE_GAME_OVER ? "Game Over" : "You Win"), 0, 0, SCREEN_WIDTH, TILE_SIZE*3);
+   render_heading(ctx, state == STATE_GAME_OVER ? "GAME OVER" : "YOU WIN");
 
-   nullctx_fontsize(1);
- 
-   set_rgb(ctx, 185, 172, 159);
+   render_score(ctx);
 
-   sprintf(tmp, "Score: %i", game_get_score());
-   draw_text_centered(ctx, tmp, 0, 0, SCREEN_WIDTH, TILE_SIZE*5);
-
-   set_rgb(ctx, 185, 172, 159);
-   fill_rectangle(ctx, TILE_SIZE / 2, TILE_SIZE * 4, SCREEN_HEIGHT - TILE_SIZE * 2, FONT_SIZE * 3);
-
-   nullctx.color=color_lut[1];
-
-   draw_text_centered(ctx, "PRESS START", TILE_SIZE / 2 + SPACING, TILE_SIZE * 4 + SPACING,
-                      SCREEN_HEIGHT - TILE_SIZE * 2 - SPACING * 2, FONT_SIZE * 3 - SPACING * 2);
+   render_button(ctx, "PRESS START", TILE_SIZE * 4);
 }
 
 void render_paused(void)
 {
-   char tmp[100];
    int ctx=0;
 
    render_playing();
@@ -472,25 +477,12 @@ void render_paused(void)
    set_rgba(ctx, 250, 248, 239, 0.85);
    fill_rectangle(ctx, 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
 
-   nullctx_fontsize(2); 
-   set_rgb(ctx, 185, 172, 159);
-   draw_text_centered(ctx, "Paused", 0, 0, SCREEN_WIDTH, TILE_SIZE*3);
+   render_heading(ctx, "PAUSED");
 
-   nullctx_fontsize(1);
-   set_rgb(ctx, 185, 172, 159);
+   render_score(ctx);
 
-   sprintf(tmp, "Score: %i", game_get_score());
-   draw_text_centered(ctx, tmp, 0, 0, SCREEN_WIDTH, TILE_SIZE*5);
-
-   set_rgb(ctx, 185, 172, 159);
-   fill_rectangle(ctx, TILE_SIZE / 2, TILE_SIZE * 4, SCREEN_HEIGHT - TILE_SIZE * 2, FONT_SIZE * 5);
-
-   nullctx.color= color_lut[1];
-
-   draw_text_centered(ctx, "SELECT: New Game", TILE_SIZE / 2 + SPACING, TILE_SIZE * 4 + SPACING,
-                      SCREEN_HEIGHT - TILE_SIZE * 2 - SPACING * 2, FONT_SIZE * 3 - SPACING * 2);
-   draw_text_centered(ctx, "START: Continue", TILE_SIZE / 2 + SPACING, TILE_SIZE * 4 + SPACING + FONT_SIZE * 2,
-                      SCREEN_HEIGHT - TILE_SIZE * 2 - SPACING * 2, FONT_SIZE * 3 - SPACING * 2);
+   render_button(ctx, "SELECT: NEW GAME", TILE_SIZE * 3.5);
+   render_button(ctx, "START: CONTINUE", TILE_SIZE * 4.5 + SPACING);
 }
 
 int game_init_pixelformat(void)
