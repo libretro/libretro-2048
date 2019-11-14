@@ -2,7 +2,7 @@ ifeq ($(LIBRETRO_COMM_DIR),)
 	LIBRETRO_COMM_DIR := $(CORE_DIR)/libretro-common
 endif
 
-INCFLAGS :=
+INCFLAGS := -I$(LIBRETRO_COMM_DIR)/include
 
 SOURCES_C := $(CORE_DIR)/libretro.c \
 	$(CORE_DIR)/game_noncairo.c \
