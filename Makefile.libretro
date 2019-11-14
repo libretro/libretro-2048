@@ -566,6 +566,10 @@ CORE_DIR := .
 
 include Makefile.common
 
+ifneq (,$(findstring msvc2003,$(platform)))
+INCFLAGS += -I$(LIBRETRO_COMM_DIR)/include/compat/msvc
+endif
+
 OBJECTS := $(SOURCES_C:.c=.o)
 CFLAGS += $(fpic) $(PLATFORM_DEFINES)
 
