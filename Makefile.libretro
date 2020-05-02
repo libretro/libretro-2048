@@ -138,6 +138,8 @@ else ifeq ($(platform), qnx)
 	TARGET := $(TARGET_NAME)_libretro_$(platform).$(EXT)
    fpic := -fPIC
    SHARED := -shared -Wl,--no-undefined
+   CC = qcc -Vgcc_ntoarmv7le
+   CXX = QCC -Vgcc_ntoarmv7le_cpp
 
 # Emscripten
 else ifeq ($(platform), emscripten)
