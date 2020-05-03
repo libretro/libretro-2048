@@ -62,7 +62,7 @@ filter_out2 = $(call filter_out1,$(call filter_out1,$1))
 unixpath = $(subst \,/,$1)
 unixcygpath = /$(subst :,,$(call unixpath,$1))
 
-ifeq ($(platform), unix)
+ifneq (,$(filter $(platform), unix unix-armv7-hardfloat-neon))
 	EXT?=so
    TARGET := $(TARGET_NAME)_libretro$(PLAT).$(EXT)
    fpic := -fPIC
