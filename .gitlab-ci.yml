@@ -1,6 +1,6 @@
 .core-defs:
   variables:
-    JNI_PATH: libretro
+    JNI_PATH: .
     CORENAME: 2048
 
 include:
