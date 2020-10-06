@@ -5,31 +5,26 @@
 include:
   - template: Jobs/Code-Quality.gitlab-ci.yml
   - project: 'libretro-infrastructure/ci-templates'
-    file: '/libnx-static.yml'
+    file: '/linux-x64.yml'
+  - project: 'libretro-infrastructure/ci-templates'
+    file: '/windows-x64-mingw.yml'
+
+stages:
+  - build-prepare
+  - build-shared
+  - build-static
+  - test
 
 libretro-build-linux-x64:
-  image: $CI_SERVER_HOST:5050/libretro-infrastructure/libretro-build-amd64-ubuntu:latest
-  stage: build-shared
-  script:
-    - make -f Makefile.libretro -j10
-  artifacts:
-    paths:
-    - 2048_libretro.so
-    expire_in: 1 month
-  dependencies: []
-
-libretro-build-windows-x64:
-  image: $CI_SERVER_HOST:5050/libretro-infrastructure/libretro-build-amd64-ubuntu:latest
-  stage: build-shared
-  script:
-    - make -f Makefile.libretro -j10 platform=win64 MSYSTEM=MINGW64
-  artifacts:
-    paths:
-    - 2048_libretro.dll
-    expire_in: 1 month
-  dependencies: []
-
-libretro-build-libnx-aarch64:
   extends:
     - .core-defs
-    - .libretro-libnx-static-retroarch-master
+    - .libretro-linux-x64-make-default
+  script:
+    - make -f Makefile.libretro -j${NUMPROC}
+
+libretro-build-windows-x64:
+  extends:
+    - .core-defs
+    - .libretro-windows-x64-mingw-make-default
+  script:
+    - make -f Makefile.libretro -j${NUMPROC}
