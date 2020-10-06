@@ -38,4 +38,4 @@ libretro-build-libnx-aarch64:
     - .core-defs
     - .libretro-libnx-static-retroarch-master
   variables:
-    MAKEFILE: Makefile.libnx
+    MAKEFILE: Makefile.libretro
