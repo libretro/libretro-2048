@@ -5,6 +5,8 @@
 include:
   - template: Jobs/Code-Quality.gitlab-ci.yml
   - project: 'libretro-infrastructure/ci-templates'
+    file: '/libnx-static.yml'
+  - project: 'libretro-infrastructure/ci-templates'
     file: '/linux-x64.yml'
   - project: 'libretro-infrastructure/ci-templates'
     file: '/windows-x64-mingw.yml'
@@ -15,6 +17,7 @@ stages:
   - build-static
   - test
 
+#Desktop
 libretro-build-linux-x64:
   extends:
     - .core-defs
@@ -28,3 +31,11 @@ libretro-build-windows-x64:
     - .libretro-windows-x64-mingw-make-default
   script:
     - make -f Makefile.libretro -j${NUMPROC}
+
+# Static
+libretro-build-libnx-aarch64:
+  extends:
+    - .core-defs
+    - .libretro-libnx-static-retroarch-master
+  variables:
+    MAKEFILE: Makefile.libnx
