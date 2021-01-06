@@ -132,6 +132,12 @@ android-x86:
     - .libretro-android-jni-x86
     - .core-defs
 
+# iOS 9
+libretro-build-ios-9:
+  extends:
+    - .libretro-ios9-make-default
+    - .core-defs
+
 ################################### CONSOLES #################################
 # PlayStation Portable
 libretro-build-psp:
