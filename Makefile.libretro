@@ -1,4 +1,5 @@
 STATIC_LINKING=0
+WANT_CAIRO := 0
 
 # platform
 ifeq ($(platform),)
@@ -610,6 +611,10 @@ ${LIBRARY_NAME}_FILES = $(SOURCES_C)
 include $(THEOS_MAKE_PATH)/library.mk
 else
 all: $(TARGET)
+
+ifneq (0,$(WANT_CAIRO))
+include Makefile.cairo
+endif
 
 $(TARGET): $(OBJECTS) 
 ifeq ($(STATIC_LINKING), 1)
