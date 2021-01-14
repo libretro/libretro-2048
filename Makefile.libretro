@@ -158,8 +158,8 @@ else ifeq ($(platform), psl1ght)
 else ifeq ($(platform), ps2)
    EXT=a
    TARGET := $(TARGET_NAME)_libretro_$(platform).$(EXT)
-   CC = ee-gcc$(EXE_EXT)
-   AR = ee-ar$(EXE_EXT)
+   CC = mips64r5900el-ps2-elf-gcc$(EXE_EXT)
+   AR = mips64r5900el-ps2-elf-ar$(EXE_EXT)
    PLATFORM_DEFINES := -DPS2 -G0 -DABGR8888
    STATIC_LINKING = 1
 
