@@ -362,8 +362,6 @@ export INCLUDE := $(INCLUDE)
 export LIB := $(LIB);$(WindowsSdkDir)
 endif
 
-LIBPATH_VAR := /LIBPATH:$(LIBPATH)
-
 TARGET := $(TARGET_NAME)_libretro.dll
 PSS_STYLE :=2
 LDFLAGS += -DLL
@@ -630,7 +628,7 @@ else
 	$(AR) rcs $@ $(OBJECTS)
 endif
 else
-	$(LD) $(LIBPATH_VAR) $(fpic) $(SHARED) $(INCLUDES) $(LFLAGS) $(LINKOUT)$@ $(OBJECTS) $(LDFLAGS) $(LIBS)
+	$(LD) $(fpic) $(SHARED) $(INCLUDES) $(LFLAGS) $(LINKOUT)$@ $(OBJECTS) $(LDFLAGS) $(LIBS)
 endif
 
 %.o: %.c
