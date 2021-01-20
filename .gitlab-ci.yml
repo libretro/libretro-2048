@@ -21,7 +21,11 @@ include:
   # Windows msvc10 64-bit
   - project: 'libretro-infrastructure/ci-templates'
     file: '/windows-x64-msvc10.yml'
-    
+
+  # Windows msvc10 32-bit
+  - project: 'libretro-infrastructure/ci-templates'
+    file: '/windows-x86-msvc10.yml'
+
   # Windows 32-bit
   - project: 'libretro-infrastructure/ci-templates'
     file: '/windows-i686-mingw.yml'
@@ -114,6 +118,14 @@ libretro-build-windows-x64:
 libretro-build-windows-msvc10-x64:
   extends:
     - .libretro-windows-x64-msvc10-make-default
+    - .core-defs
+  variables:	
+    PREINITIALIZED: 1
+
+# Windows msvc10 32-bit
+libretro-build-windows-msvc10-x86:
+  extends:
+    - .libretro-windows-x86-msvc10-make-default
     - .core-defs
   variables:	
     PREINITIALIZED: 1
