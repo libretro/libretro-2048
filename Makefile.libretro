@@ -606,7 +606,7 @@ else
 ifeq ($(PREINITIALIZED),1)
 	LD ?= link.exe
 else
-	LD = link.exe
+	LD ?= link.exe
 endif
 endif
 else ifneq ($(platform),genode)
