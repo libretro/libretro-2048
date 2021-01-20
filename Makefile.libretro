@@ -1,19 +1,7 @@
 STATIC_LINKING=0
+PREINITIALIZED:=0
 
-ifeq ($(platform),)
-ifeq ($(shell uname -s),)
-	platform = win
-else ifneq ($(findstring MINGW,$(shell uname -a)),)
-	platform = win
-else ifneq ($(findstring Darwin,$(shell uname -a)),)
-	platform = osx
-else ifneq ($(findstring win,$(shell uname -a)),)
-	platform = win
-else
-	platform = unix
-endif
-endif
-
+# platform
 ifeq ($(platform),)
 platform = unix
 ifeq ($(shell uname -s),)
@@ -22,10 +10,6 @@ else ifneq ($(findstring MINGW,$(shell uname -s)),)
    platform = win
 else ifneq ($(findstring Darwin,$(shell uname -s)),)
    platform = osx
-		arch = intel
-		ifeq ($(shell uname -p),powerpc)
-			arch = ppc
-		endif
 else ifneq ($(findstring win,$(shell uname -s)),)
    platform = win
 endif
@@ -354,6 +338,11 @@ HAS_GCC := 0
 
 # Windows MSVC 2010 x64
 else ifeq ($(platform), windows_msvc2010_x64)
+
+ifeq ($(PREINITIALIZED),1)
+	CC  ?= cl.exe
+	CXX ?= cl.exe
+else
 	CC  = cl.exe
 	CXX = cl.exe
 
@@ -372,6 +361,8 @@ WindowsSdkDirInc ?= $(shell reg query "HKLM\SOFTWARE\Microsoft\Microsoft SDKs\Wi
 INCFLAGS_PLATFORM = -I"$(WindowsSdkDirInc)"
 export INCLUDE := $(INCLUDE)
 export LIB := $(LIB);$(WindowsSdkDir)
+endif
+
 TARGET := $(TARGET_NAME)_libretro.dll
 PSS_STYLE :=2
 LDFLAGS += -DLL
