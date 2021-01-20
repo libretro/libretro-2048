@@ -629,7 +629,11 @@ else
 	$(AR) rcs $@ $(OBJECTS)
 endif
 else
+ifneq (,$(findstring msvc,$(platform)))
+	$(LD) $(LINKOUT)$@ $(OBJECTS)
+else
 	$(LD) $(fpic) $(SHARED) $(INCLUDES) $(LFLAGS) $(LINKOUT)$@ $(OBJECTS) $(LDFLAGS) $(LIBS)
+endif
 endif
 
 %.o: %.c
