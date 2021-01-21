@@ -3,8 +3,14 @@ ifeq (,$(TARGET_NAME))
 $(error "Don't use this Makefile directly.  Instead use `make -f Makefile.libretro WANT_CAIRO=1`")
 endif
 
+ifeq (,$(HOST))
+PKG_CONFIG := pkg-config
+else
+PKG_CONFIG := $(HOST)-pkg-config
+endif
+
 packages=cairo pixman-1
-ifeq ($(words $(packages)),$(words $(shell pkg-config --modversion --silence-errors $(packages))))
+ifeq ($(words $(packages)),$(words $(shell $(PKG_CONFIG) --modversion --silence-errors $(packages))))
 USE_STATIC_LIBS := 0
 else
 USE_STATIC_LIBS := 1
@@ -19,9 +25,9 @@ LIBS += $(DEP_INSTALL_DIR)/lib/libcairo.a $(DEP_INSTALL_DIR)/lib/libpixman-1.a
 LIBS += -lpthread -lfreetype -lfontconfig
 else
 packages += freetype2 fontconfig
-CFLAGS += $(shell pkg-config --cflags $(packages))
-LFLAGS := $(shell pkg-config --libs-only-L --libs-only-other $(packages))
-LIBS += $(shell pkg-config --libs-only-l $(packages))
+CFLAGS += $(shell $(PKG_CONFIG) --cflags $(packages))
+LFLAGS := $(shell $(PKG_CONFIG) --libs-only-L --libs-only-other $(packages))
+LIBS += $(shell $(PKG_CONFIG) --libs-only-l $(packages))
 endif
 
 host_opts=
