@@ -26,7 +26,7 @@ ifeq ($(shell uname -p),powerpc)
 	arch = ppc
 else
 	ifeq ($(shell uname -p),arm)
-		arch = arm
+		arch = arm64
 	else
 		arch = intel
 	endif
