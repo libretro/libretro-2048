@@ -87,7 +87,7 @@ else ifeq ($(platform), osx)
    endif
 
    ifeq ($(arch),arm64)
-	        TARGET_RULE = -target $(LIBRETRO_APPLE_PLATFORM) -isysroot $(LIBRETRO_APPLE_ISYSROOT)
+	        TARGET_RULE = -arch arm64
 		CFLAGS   += $(TARGET_RULE)
 		CPPFLAGS += $(TARGET_RULE)
 		CXXFLAGS += $(TARGET_RULE)
