@@ -91,6 +91,7 @@ else ifeq ($(platform), osx)
 		CFLAGS   += $(TARGET_RULE)
 		CPPFLAGS += $(TARGET_RULE)
 		CXXFLAGS += $(TARGET_RULE)
+		LDFLAGS  += $(TARGET_RULE)
    endif
 
 	CFLAGS  += $(ARCHFLAGS)
