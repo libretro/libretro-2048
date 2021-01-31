@@ -27,7 +27,7 @@ else ifneq ($(findstring Darwin,$(shell uname -a)),)
 		arch = ppc
 	endif
 	ifeq ($(shell uname -p),arm)
-		arch = arm64
+		arch = arm
 	endif
 else ifneq ($(findstring MINGW,$(shell uname -a)),)
 	system_platform = win
@@ -95,6 +95,7 @@ else ifeq ($(platform), osx)
    endif
 
 	CFLAGS  += $(ARCHFLAGS)
+	CXXFLAGS  += $(ARCHFLAGS)
 	LDFLAGS += $(ARCHFLAGS)
 
 # iOS
