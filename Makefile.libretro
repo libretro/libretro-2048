@@ -358,7 +358,7 @@ WindowsSDKLibDir := $(shell cygpath -w "$(WindowsSdkDir)\Lib\x64")
 
 INCFLAGS_PLATFORM = -I"$(WindowsSdkDirInc)"
 export INCLUDE := $(INCLUDE);$(WindowsSDKIncludeDir);$(WindowsSDKGlIncludeDir)
-export LIB := $(LIB);$(WindowsSDKLibDir)
+export LIB := $(LIB);$(WindowsSdkDir)
 
 TARGET := $(TARGET_NAME)_libretro.dll
 PSS_STYLE :=2
@@ -382,7 +382,7 @@ WindowsSDKLibDir := $(shell cygpath -w "$(WindowsSdkDir)\Lib")
 
 INCFLAGS_PLATFORM = -I"$(WindowsSdkDirInc)"
 export INCLUDE := $(INCLUDE);$(WindowsSDKIncludeDir);$(WindowsSDKGlIncludeDir)
-export LIB := $(LIB);$(WindowsSDKLibDir)
+export LIB := $(LIB);$(WindowsSdkDir)
 TARGET := $(TARGET_NAME)_libretro.dll
 PSS_STYLE :=2
 LDFLAGS += -DLL
