@@ -47,10 +47,12 @@ int VIRTUAL_WIDTH;
 void initgraph(void)
 {
 	VIRTUAL_WIDTH=SCREEN_WIDTH;
+#if 0
 	printf("GW:%d GH:%d  GSZ:%d\n",GRID_WIDTH,GRID_HEIGHT,GRID_SIZE);
 	printf("SP:%d TSZ:%d\n",SPACING,TILE_SIZE);
 	printf("BW:%d BH:%d BOY:%d \n",BOARD_WIDTH,BOARD_HEIGHT,BOARD_OFFSET_Y);
 	printf("size:%dx%dx%d \n",SCREEN_WIDTH,SCREEN_HEIGHT,SCREEN_PITCH);
+#endif
 }
 
 void DrawFBoxBmp(char  *buffer,int x,int y,int dx,int dy,unsigned color)
@@ -336,7 +338,7 @@ void game_init(void)
 
    srand(t);
 
-	initgraph();
+   initgraph();
 
    init_luts();
    init_static_surface();

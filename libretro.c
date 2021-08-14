@@ -261,7 +261,6 @@ bool retro_load_game(const struct retro_game_info *info)
    frame_cb.callback(frame_cb.reference);
    environ_cb(RETRO_ENVIRONMENT_SET_FRAME_TIME_CALLBACK, &frame_cb);
 
-   (void)info;
    return true;
 }
 
