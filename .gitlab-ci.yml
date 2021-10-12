@@ -83,6 +83,10 @@ include:
   # PlayStation2
   - project: 'libretro-infrastructure/ci-templates'
     file: '/ps2-static.yml'
+  
+  # PlayStation 4
+  - project: 'libretro-infrastructure/ci-templates'
+    file: '/orbis-static.yml'
 
   # Nintendo 3DS
   - project: 'libretro-infrastructure/ci-templates'
@@ -258,6 +262,12 @@ libretro-build-vita:
 libretro-build-ps2:
   extends:
     - .libretro-ps2-static-retroarch-master
+    - .core-defs
+
+# PlayStation 4
+libretro-build-orbis:
+  extends:
+    - .libretro-orbis-static-retroarch-master
     - .core-defs
 
 # Nintendo 3DS

@@ -195,6 +195,17 @@ else ifeq ($(platform), vita)
 	AR = arm-vita-eabi-ar$(EXE_EXT)
    PLATFORM_DEFINES := -DVITA
    STATIC_LINKING = 1
+
+# Orbis(PS4)
+else ifeq ($(platform), orbis)
+   TARGET := $(TARGET_NAME)_libretro_$(platform).a
+   CC = clang
+   CXX = clang++
+   AR = orbis-ar
+   PLATFORM_DEFINES := -DORBIS
+   CFLAGS += -isysroot $(ORBISDEV)
+   STATIC_LINKING = 1
+
 # DOS
 else ifeq ($(platform), dos)
 	TARGET := $(TARGET_NAME)_libretro_$(platform).a
