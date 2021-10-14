@@ -1,6 +1,4 @@
-ifeq ($(LIBRETRO_COMM_DIR),)
-	LIBRETRO_COMM_DIR := $(CORE_DIR)/libretro-common
-endif
+LIBRETRO_COMM_DIR := $(CORE_DIR)/libretro-common
 
 INCFLAGS := -I$(LIBRETRO_COMM_DIR)/include
 
