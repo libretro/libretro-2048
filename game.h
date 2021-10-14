@@ -2,7 +2,7 @@
 #define GAME_H
 
 #include <stdint.h>
-#include "libretro.h"
+#include <libretro.h>
 
 #define FONT "cairo:monospace"
 #define FONT_SIZE 20

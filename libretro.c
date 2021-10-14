@@ -7,6 +7,9 @@
 #include <stdarg.h>
 #include <errno.h>
 
+#include <file/file_path.h>
+#include <streams/file_stream.h>
+
 retro_log_printf_t log_cb;
 retro_video_refresh_t video_cb;
 
@@ -19,101 +22,173 @@ retro_environment_t environ_cb;
 static retro_input_poll_t input_poll_cb;
 static retro_input_state_t input_state_cb;
 
-float frame_time = 0;
+#define SAVE_FILE_NAME "2048.srm"
+
+static float frame_time        = 0;
+
+static bool first_run          = true;
+static bool sram_accessed      = false;
+static bool use_sram_file      = false;
+
+static bool block_sram_write   = false;
+static void *game_data_scratch = NULL;
 
 static bool libretro_supports_bitmasks = false;
 
-static void fallback_log(enum retro_log_level level, const char *fmt, ...)
+void log_2048(enum retro_log_level level, const char *format, ...)
 {
-   va_list va;
+   char msg[512];
+   va_list ap;
 
-   (void)level;
+   msg[0] = '\0';
 
-   va_start(va, fmt);
-   vfprintf(stderr, fmt, va);
-   va_end(va);
+   if (!format || (format[0] == '\0'))
+      return;
+
+   va_start(ap, format);
+   vsprintf(msg, format, ap);
+   va_end(ap);
+
+   if (log_cb)
+      log_cb(level, "[2048] %s", msg);
+   else
+      fprintf((level == RETRO_LOG_ERROR) ? stderr : stdout,
+            "[2048] %s", msg);
+}
+
+static void read_save_file(void)
+{
+   char *save_dir = NULL;
+
+   if (environ_cb(RETRO_ENVIRONMENT_GET_SAVE_DIRECTORY, &save_dir) &&
+       save_dir)
+   {
+      RFILE *save_file = NULL;
+      int64_t save_size;
+      char save_path[1024];
+
+      save_path[0] = '\0';
+
+      /* Get save file path */
+      fill_pathname_join(save_path, save_dir,
+            SAVE_FILE_NAME, sizeof(save_path));
+
+      if (!path_is_valid(save_path))
+      {
+         log_2048(RETRO_LOG_INFO, "No game data found: %s\n", save_path);
+         return;
+      }
+
+      /* Open save file */
+      save_file = filestream_open(save_path,
+            RETRO_VFS_FILE_ACCESS_READ,
+            RETRO_VFS_FILE_ACCESS_HINT_NONE);
+
+      if (!save_file)
+      {
+         log_2048(RETRO_LOG_ERROR, "Failed to open save file: %s\n", save_path);
+         return;
+      }
+
+      /* Check save file size */
+      filestream_seek(save_file, 0, RETRO_VFS_SEEK_POSITION_END);
+      save_size = filestream_tell(save_file);
+      filestream_seek(save_file, 0, RETRO_VFS_SEEK_POSITION_START);
+
+      if (save_size != (int64_t)game_data_size())
+      {
+         log_2048(RETRO_LOG_ERROR, "Failed to load save file: incorrect size.\n");
+         filestream_close(save_file);
+         return;
+      }
+
+      /* Read save file */
+      filestream_read(save_file, game_data(), game_data_size());
+      filestream_close(save_file);
+
+      log_2048(RETRO_LOG_INFO, "Loaded save file: %s\n", save_path);
+   }
+   else
+      log_2048(RETRO_LOG_WARN, "Unable to load game data - save directory not set.\n");
+}
+
+static void write_save_file(void)
+{
+   char *save_dir = NULL;
+
+   if (environ_cb(RETRO_ENVIRONMENT_GET_SAVE_DIRECTORY, &save_dir) &&
+       save_dir)
+   {
+      RFILE *save_file = NULL;
+      char save_path[1024];
+
+      save_path[0] = '\0';
+
+      /* Get save file path */
+      fill_pathname_join(save_path, save_dir,
+            SAVE_FILE_NAME, sizeof(save_path));
+
+      /* Open save file */
+      save_file = filestream_open(save_path,
+            RETRO_VFS_FILE_ACCESS_WRITE,
+            RETRO_VFS_FILE_ACCESS_HINT_NONE);
+
+      if (!save_file)
+      {
+         log_2048(RETRO_LOG_ERROR, "Failed to open save file: %s\n", save_path);
+         return;
+      }
+
+      /* Write save file */
+      filestream_write(save_file, game_data(), game_data_size());
+      filestream_close(save_file);
+
+      log_2048(RETRO_LOG_INFO, "Wrote save file: %s\n", save_path);
+   }
+   else
+      log_2048(RETRO_LOG_WARN, "Unable to save game data - save directory not set.\n");
 }
 
 void retro_init(void)
 {
-   char *savedir = NULL;
+   struct retro_log_callback logging;
+
+   frame_time        = 0;
+   first_run         = true;
+   sram_accessed     = false;
+   use_sram_file     = false;
+   block_sram_write  = false;
+   game_data_scratch = malloc(game_data_size());
+
+   libretro_supports_bitmasks = false;
+   if (environ_cb(RETRO_ENVIRONMENT_GET_INPUT_BITMASKS, NULL))
+      libretro_supports_bitmasks = true;
+
+   log_cb = NULL;
+   if (environ_cb(RETRO_ENVIRONMENT_GET_LOG_INTERFACE, &logging))
+      log_cb = logging.log;
 
    game_calculate_pitch();
 
    game_init();
-
-   environ_cb(RETRO_ENVIRONMENT_GET_SAVE_DIRECTORY, &savedir);
-
-   if (savedir)
-   {
-      FILE *fp;
-#ifdef _WIN32
-      char slash = '\\';
-#else
-      char slash = '/';
-#endif
-      char filename[1024] = {0};
-      sprintf(filename, "%s%c2048.srm", savedir, slash);
-
-      fp = fopen(filename, "rb");
-
-      if (fp)
-      {
-         fread(game_data(), game_data_size(), 1, fp);
-         fclose(fp);
-      }
-      else
-      {
-         if (log_cb)
-            log_cb(RETRO_LOG_WARN, "[2048] unable to load game data: %s.\n", strerror(errno));
-      }
-   }
-   else
-   {
-         if (log_cb)
-            log_cb(RETRO_LOG_WARN, "[2048] unable to load game data: save directory not set.\n");
-   }
-
-   if (environ_cb(RETRO_ENVIRONMENT_GET_INPUT_BITMASKS, NULL))
-      libretro_supports_bitmasks = true;
 }
 
 void retro_deinit(void)
 {
-   char *savedir = NULL;
-   environ_cb(RETRO_ENVIRONMENT_GET_SAVE_DIRECTORY, &savedir);
-
-   if (savedir)
-   {
-      FILE *fp;
-#ifdef _WIN32
-      char slash = '\\';
-#else
-      char slash = '/';
-#endif
-      char filename[1024] = {0};
-
-      sprintf(filename, "%s%c2048.srm", savedir, slash);
-      fp = fopen(filename, "wb");
-
-      if (fp)
-      {
-         fwrite(game_save_data(), game_data_size(), 1, fp);
-         fclose(fp);
-      }
-      else
-      {
-         if (log_cb)
-            log_cb(RETRO_LOG_WARN, "[2048] unable to save game data: %s.\n", strerror(errno));
-      }
-   }
-   else
-   {
-      if (log_cb)
-         log_cb(RETRO_LOG_WARN, "[2048] unable to save game data: save directory not set.\n");
-   }
+   if (use_sram_file)
+      write_save_file();
 
    game_deinit();
+
+   frame_time        = 0;
+   first_run         = true;
+   sram_accessed     = false;
+   use_sram_file     = false;
+
+   block_sram_write = false;
+   if (game_data_scratch)
+      free(game_data_scratch);
+   game_data_scratch = NULL;
 
    libretro_supports_bitmasks = false;
 }
@@ -155,17 +230,16 @@ void retro_get_system_av_info(struct retro_system_av_info *info)
 
 void retro_set_environment(retro_environment_t cb)
 {
-   struct retro_log_callback logging;
+   struct retro_vfs_interface_info vfs_iface_info;
    bool no_rom = true;
 
    environ_cb = cb;
+   environ_cb(RETRO_ENVIRONMENT_SET_SUPPORT_NO_GAME, &no_rom);
 
-   cb(RETRO_ENVIRONMENT_SET_SUPPORT_NO_GAME, &no_rom);
-
-   if (cb(RETRO_ENVIRONMENT_GET_LOG_INTERFACE, &logging))
-      log_cb = logging.log;
-   else
-      log_cb = fallback_log;
+   vfs_iface_info.required_interface_version = 1;
+   vfs_iface_info.iface                      = NULL;
+   if (environ_cb(RETRO_ENVIRONMENT_GET_VFS_INTERFACE, &vfs_iface_info))
+      filestream_vfs_init(&vfs_iface_info);
 }
 
 void retro_set_audio_sample(retro_audio_sample_t cb)
@@ -211,6 +285,25 @@ void retro_run(void)
 {
    int16_t ret = 0;
    key_state_t ks;
+
+   block_sram_write = false;
+
+   /* If this is the first call of retro_run(),
+    * check if the SRAM memory data has already
+    * been accessed. If not, this means the
+    * frontend SRAM interface is disabled, and
+    * the core must handle save file reading
+    * and writing internally */
+   if (first_run)
+   {
+      if (!sram_accessed)
+      {
+         read_save_file();
+         use_sram_file = true;
+      }
+
+      first_run = false;
+   }
 
    input_poll_cb();
    
@@ -266,6 +359,7 @@ bool retro_load_game(const struct retro_game_info *info)
 
 void retro_unload_game(void)
 {
+   block_sram_write = false;
 }
 
 unsigned retro_get_region(void)
@@ -288,6 +382,8 @@ size_t retro_serialize_size(void)
 
 bool retro_serialize(void *data_, size_t size)
 {
+   block_sram_write = false;
+
    if (size < game_data_size())
       return false;
 
@@ -297,6 +393,8 @@ bool retro_serialize(void *data_, size_t size)
 
 bool retro_unserialize(const void *data_, size_t size)
 {
+   block_sram_write = true;
+
    if (size < game_data_size())
       return false;
 
@@ -308,6 +406,35 @@ void *retro_get_memory_data(unsigned id)
 {
    if (id != RETRO_MEMORY_SAVE_RAM)
       return NULL;
+
+   sram_accessed = true;
+
+   /* An ugly workaround for a RetroArch frontend
+    * feature...
+    * If a save state is restored with the RetroArch
+    * [Don't Overwrite SaveRAM on Loading Save State]
+    * option enabled, then the following sequence
+    * occurs:
+    * 1. Current SRAM data is read from the core
+    * 2. retro_unserialize() is called
+    * 3. The SRAM data from (1) is written back
+    *    to the core
+    * The issue here is that the SRAM data and the
+    * serialised data for this core are identical
+    * (they both access the same buffer). Thus
+    * step (3) reverts the de-serialisation operation
+    * by overwriting the result with the previous
+    * game state...
+    * The only way around this is to temporarily
+    * disable any SRAM write operations immediately
+    * following retro_unserialize() by passing a
+    * dummy buffer to the frontend (any changes to
+    * which are ignored by the core). */
+   if (block_sram_write)
+   {
+      memcpy(game_data_scratch, game_data(), game_data_size());
+      return game_data_scratch;
+   }
 
    return game_data();
 }
