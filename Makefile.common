@@ -19,6 +19,11 @@ else
 	SOURCES_C += $(CORE_DIR)/game_cairo.c
 endif
 
+SOURCES_C := \
+	$(CORE_DIR)/libretro.c \
+	$(CORE_DIR)/game_noncairo.c \
+	$(CORE_DIR)/game_shared.c
+
 ifneq ($(STATIC_LINKING), 1)
 	SOURCES_C += \
 		$(LIBRETRO_COMM_DIR)/compat/compat_posix_string.c \
