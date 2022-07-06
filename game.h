@@ -23,6 +23,7 @@
 #define SCREEN_HEIGHT  BOARD_OFFSET_Y + BOARD_HEIGHT + SPACING
 
 extern int SCREEN_PITCH;
+extern bool dark_theme;
 
 typedef struct
 {

@@ -35,6 +35,8 @@ static void *game_data_scratch = NULL;
 
 static bool libretro_supports_bitmasks = false;
 
+bool dark_theme = false;
+
 void log_2048(enum retro_log_level level, const char *format, ...)
 {
    char msg[512];
@@ -228,13 +230,33 @@ void retro_get_system_av_info(struct retro_system_av_info *info)
    info->geometry.aspect_ratio = 0.0;
 }
 
+static void check_variables(void)
+{
+   struct retro_variable var        = {0};
+
+   var.key = "2048_theme";
+   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
+   {
+      if (!strncmp(var.value, "Light", 4))
+         dark_theme = false;
+      else if (!strncmp(var.value, "Dark", 4))
+         dark_theme = true;
+   }
+}
+
 void retro_set_environment(retro_environment_t cb)
 {
    struct retro_vfs_interface_info vfs_iface_info;
    bool no_rom = true;
+   
+   static const struct retro_variable vars[] = {
+      { "2048_theme", "Theme (restart); Light|Dark" },
+      { NULL, NULL },
+   };
 
    environ_cb = cb;
    environ_cb(RETRO_ENVIRONMENT_SET_SUPPORT_NO_GAME, &no_rom);
+   cb(RETRO_ENVIRONMENT_SET_VARIABLES, (void*)vars);
 
    vfs_iface_info.required_interface_version = 1;
    vfs_iface_info.iface                      = NULL;
@@ -301,6 +323,8 @@ void retro_run(void)
          read_save_file();
          use_sram_file = true;
       }
+      
+      check_variables();
 
       first_run = false;
    }

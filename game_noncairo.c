@@ -12,6 +12,7 @@
 int SCREEN_PITCH = 0;
 
 static unsigned int color_lut[13];
+static unsigned int color_lut_dark[13];
 static const char* label_lut[13] =
 {
    "",
@@ -235,9 +236,9 @@ static void draw_tile(int ctx, cell_t *cell)
    }
 
    if (cell->value)
-      nullctx.color=color_lut[cell->value];
+      nullctx.color= dark_theme ? color_lut_dark[cell->value] : color_lut[cell->value];
    else
-      nullctx.color=RGB32(205,192,180,255);
+      nullctx.color= dark_theme ? RGB32(50,63,75,255) : RGB32(205,192,180,255);
 
    fill_rectangle(ctx, x, y, w, h);
 
@@ -250,7 +251,10 @@ static void draw_tile(int ctx, cell_t *cell)
       else /* four digits */
          nullctx_fontsize(1);
 
-      set_rgb(ctx, 119, 110, 101);
+      if (dark_theme)
+         set_rgb(ctx, 200, 200, 200);
+      else
+         set_rgb(ctx, 119, 110, 101);
       draw_text_centered(ctx, label_lut[cell->value], x, y, w, h);
    }
 }
@@ -262,6 +266,23 @@ void game_calculate_pitch(void)
 
 static void init_luts(void)
 {
+   color_lut_dark[0] = RGB32(17,27,37,90);
+   color_lut_dark[1] = RGB32(17,27,37,255);
+
+   color_lut_dark[2] = RGB32(18,31,55,255);
+   color_lut_dark[3] = RGB32(13,50,100,255);
+   color_lut_dark[4] = RGB32(13,75,120,255);
+   color_lut_dark[5] = RGB32(8,105,145,255);
+   color_lut_dark[6] = RGB32(8,120,155,255);
+
+   /* TODO: shadow */
+   color_lut_dark[7] = RGB32(18,48,131,255);
+   color_lut_dark[8] = RGB32(40,48,158,255);
+   color_lut_dark[9] = RGB32(80,55,175,255);
+   color_lut_dark[10] = RGB32(100,58,192,255);
+   color_lut_dark[11] = RGB32(130,61,209,255);
+   color_lut_dark[12] = RGB32(150,85,205,255);
+
    color_lut[0] = RGB32(238,228,218,90);
    color_lut[1] = RGB32(238,228,218,255);
 
@@ -277,7 +298,7 @@ static void init_luts(void)
    color_lut[9] = RGB32(237,200,80,255);
    color_lut[10] = RGB32(237,197,63,255);
    color_lut[11] = RGB32(237,194,46,255);
-   color_lut[12] = RGB32(60,58,50,255);
+   color_lut[12] = RGB32(60,58,50,255);   
 }
 
 static void init_static_surface(void)
@@ -288,22 +309,34 @@ static void init_static_surface(void)
    static_ctx = 0;
 
    /* bg */
-   set_rgb(static_ctx, 250, 248, 239);
+   if (dark_theme)
+      set_rgb(static_ctx, 5, 7, 16);
+   else
+      set_rgb(static_ctx, 250, 248, 239);
    fill_rectangle(static_ctx, 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
 
    /* grid bg */
-   set_rgb(static_ctx, 185, 172, 159);
+   if (dark_theme)
+      set_rgb(static_ctx, 70, 83, 96);
+   else
+      set_rgb(static_ctx, 185, 172, 159);
    fill_rectangle(static_ctx, SPACING, BOARD_OFFSET_Y, BOARD_WIDTH, BOARD_WIDTH);
 
    /* score bg */
-   set_rgb(static_ctx, 185, 172, 159);
+   if (dark_theme)
+      set_rgb(static_ctx, 70, 83, 96);
+   else
+      set_rgb(static_ctx, 185, 172, 159);
    fill_rectangle(static_ctx, SPACING, SPACING, TILE_SIZE*2+SPACING*2, TILE_SIZE);
 
    /* best bg */
-   set_rgb(static_ctx, 185, 172, 159);
+   if (dark_theme)
+      set_rgb(static_ctx, 70, 83, 96);
+   else
+      set_rgb(static_ctx, 185, 172, 159);
    fill_rectangle(static_ctx, TILE_SIZE*2+SPACING*4, SPACING, TILE_SIZE*2+SPACING*2, TILE_SIZE);
 
-   nullctx.color=color_lut[1];
+   nullctx.color = dark_theme ? color_lut_dark[1] : color_lut[1];
    nullctx_fontsize(1) ;
 
    /* score title */
@@ -367,12 +400,15 @@ void render_playing(void)
    nullctx_fontsize(2) ;
 
    /* score and best score value */
-   set_rgb(ctx, 255, 255, 255);
+   if (dark_theme)
+      set_rgb(ctx, 0, 0, 0);
+   else
+      set_rgb(ctx, 255, 255, 255);
    sprintf(tmp, "%i", game_get_score() % 1000000);
    draw_text_centered(ctx, tmp, SPACING*2, SPACING * 5, TILE_SIZE*2, 0);
 
    sprintf(tmp, "%i", game_get_best_score() % 1000000);
-   nullctx.color=color_lut[1];
+   nullctx.color = dark_theme ? color_lut_dark[1] : color_lut[1];
 
    draw_text_centered(ctx, tmp, TILE_SIZE*2+SPACING*5, SPACING * 5, TILE_SIZE*2, 0);
 
@@ -401,7 +437,10 @@ void render_playing(void)
       y = SPACING * 5;
       y = lerp(y, y - TILE_SIZE, *delta_score_time);
 
-      set_rgba(ctx, 119, 110, 101, lerp(1, 0, *delta_score_time));
+      if (dark_theme)
+         set_rgba(ctx, 136, 145, 154, lerp(1, 0, *delta_score_time));
+      else
+         set_rgba(ctx, 119, 110, 101, lerp(1, 0, *delta_score_time));
 
       sprintf(tmp, "+%i", *delta_score);
       draw_text_centered(ctx, tmp, x, y, TILE_SIZE * 2, TILE_SIZE);
@@ -415,19 +454,28 @@ void render_title(void)
    int ctx=0;
 
    /* bg */
-   set_rgb(ctx, 250, 248, 239);
+   if (dark_theme)
+      set_rgb(ctx, 5, 7, 16);
+   else
+      set_rgb(ctx, 250, 248, 239);
    fill_rectangle(ctx, 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
 
    nullctx_fontsize(5) ;
-   set_rgb(ctx, 185, 172, 159);
+   if (dark_theme)
+      set_rgb(ctx, 70, 83, 96);
+   else
+      set_rgb(ctx, 185, 172, 159);
    draw_text_centered(ctx, "2048", 0, 0, SCREEN_WIDTH, TILE_SIZE*3);
 
 
-   set_rgb(ctx, 185, 172, 159);
+   if (dark_theme)
+      set_rgb(ctx, 70, 83, 96);
+   else
+      set_rgb(ctx, 185, 172, 159);
    fill_rectangle(ctx, TILE_SIZE / 2, TILE_SIZE * 4, SCREEN_HEIGHT - TILE_SIZE * 2, FONT_SIZE * 3);
 
    nullctx_fontsize(1);
-   nullctx.color= color_lut[1];
+   nullctx.color = dark_theme ? color_lut_dark[1] : color_lut[1];
 
    draw_text_centered(ctx, "PRESS START", TILE_SIZE / 2 + SPACING, TILE_SIZE * 4 + SPACING,
                       SCREEN_HEIGHT - TILE_SIZE * 2 - SPACING * 2, FONT_SIZE * 3 - SPACING * 2);
@@ -444,24 +492,36 @@ void render_win_or_game_over(void)
       render_playing();
 
    /* bg */
-   set_rgba(ctx, 250, 248, 239, 0.85);
+   if (dark_theme)
+      set_rgba(ctx, 5, 7, 16, 0.85);
+   else
+      set_rgba(ctx, 250, 248, 239, 0.85);
    fill_rectangle(ctx, 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
 
    nullctx_fontsize(2); 
-   set_rgb(ctx, 185, 172, 159);
+   if (dark_theme)
+      set_rgb(ctx, 70, 83, 96);
+   else
+      set_rgb(ctx, 185, 172, 159);
    draw_text_centered(ctx, (state == STATE_GAME_OVER ? "Game Over" : "You Win"), 0, 0, SCREEN_WIDTH, TILE_SIZE*3);
 
    nullctx_fontsize(1);
  
-   set_rgb(ctx, 185, 172, 159);
+   if (dark_theme)
+      set_rgb(ctx, 70, 83, 96);
+   else
+      set_rgb(ctx, 185, 172, 159);
 
    sprintf(tmp, "Score: %i", game_get_score());
    draw_text_centered(ctx, tmp, 0, 0, SCREEN_WIDTH, TILE_SIZE*5);
 
-   set_rgb(ctx, 185, 172, 159);
+   if (dark_theme)
+      set_rgb(ctx, 70, 83, 96);
+   else
+      set_rgb(ctx, 185, 172, 159);
    fill_rectangle(ctx, TILE_SIZE / 2, TILE_SIZE * 4, SCREEN_HEIGHT - TILE_SIZE * 2, FONT_SIZE * 3);
 
-   nullctx.color=color_lut[1];
+   nullctx.color = dark_theme ? color_lut_dark[1] : color_lut[1];
 
    draw_text_centered(ctx, "PRESS START", TILE_SIZE / 2 + SPACING, TILE_SIZE * 4 + SPACING,
                       SCREEN_HEIGHT - TILE_SIZE * 2 - SPACING * 2, FONT_SIZE * 3 - SPACING * 2);
@@ -475,23 +535,35 @@ void render_paused(void)
    render_playing();
 
    /* bg */
-   set_rgba(ctx, 250, 248, 239, 0.85);
+   if (dark_theme)
+      set_rgba(ctx, 5, 7, 16, 0.85);
+   else
+      set_rgba(ctx, 250, 248, 239, 0.85);
    fill_rectangle(ctx, 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
 
    nullctx_fontsize(2); 
-   set_rgb(ctx, 185, 172, 159);
+   if (dark_theme)
+      set_rgb(ctx, 70, 83, 96);
+   else
+      set_rgb(ctx, 185, 172, 159);
    draw_text_centered(ctx, "Paused", 0, 0, SCREEN_WIDTH, TILE_SIZE*3);
 
    nullctx_fontsize(1);
-   set_rgb(ctx, 185, 172, 159);
+   if (dark_theme)
+      set_rgb(ctx, 70, 83, 96);
+   else
+      set_rgb(ctx, 185, 172, 159);
 
    sprintf(tmp, "Score: %i", game_get_score());
    draw_text_centered(ctx, tmp, 0, 0, SCREEN_WIDTH, TILE_SIZE*5);
 
-   set_rgb(ctx, 185, 172, 159);
+   if (dark_theme)
+      set_rgb(ctx, 70, 83, 96);
+   else
+      set_rgb(ctx, 185, 172, 159);
    fill_rectangle(ctx, TILE_SIZE / 2, TILE_SIZE * 4, SCREEN_HEIGHT - TILE_SIZE * 2, FONT_SIZE * 5);
 
-   nullctx.color= color_lut[1];
+   nullctx.color= dark_theme ? color_lut_dark[1] : color_lut[1];
 
    draw_text_centered(ctx, "SELECT: New Game", TILE_SIZE / 2 + SPACING, TILE_SIZE * 4 + SPACING,
                       SCREEN_HEIGHT - TILE_SIZE * 2 - SPACING * 2, FONT_SIZE * 3 - SPACING * 2);
