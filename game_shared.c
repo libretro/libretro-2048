@@ -385,6 +385,7 @@ void change_state(game_state_t state)
             end_game();
          break;
       case STATE_WON:
+         end_game();
          assert(state == STATE_TITLE);
          break;
       case STATE_PAUSED:
