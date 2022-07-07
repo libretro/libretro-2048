@@ -244,12 +244,7 @@ static void draw_tile(int ctx, cell_t *cell)
 
    if (cell->value)
    {
-      if (cell->value < 6) /* one or two digits */
-         nullctx_fontsize(3);
-      else if (cell->value < 10) /* three digits */
-         nullctx_fontsize(2);
-      else /* four digits */
-         nullctx_fontsize(1);
+      nullctx_fontsize(3);
 
       if (dark_theme)
          set_rgb(ctx, 200, 200, 200);
