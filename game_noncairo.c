@@ -298,7 +298,7 @@ static void init_luts(void)
    color_lut[9] = RGB32(237,200,80,255);
    color_lut[10] = RGB32(237,197,63,255);
    color_lut[11] = RGB32(237,194,46,255);
-   color_lut[12] = RGB32(60,58,50,255);   
+   color_lut[12] = RGB32(60,58,50,255);
 }
 
 static void init_static_surface(void)
