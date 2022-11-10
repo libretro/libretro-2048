@@ -1,0 +1,35 @@
+name: CI PS4
+
+on:
+  push:
+  pull_request:
+  repository_dispatch:
+    types: [run_build]
+
+jobs:
+  build-platform:
+    runs-on: ubuntu-latest
+    container: orbisdev/orbisdev:latest
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Install dependencies
+      run: |
+        apk add ncurses-dev make bash python2 libstdc++
+    
+    - name: Get Information Variables
+      id: core
+      run: |
+        echo "platform=$(echo orbis)" >> $GITHUB_OUTPUT
+        echo "sha8=$(echo ${GITHUB_SHA} | cut -c1-8)" >> $GITHUB_OUTPUT
+
+    - name: Compile project
+      run: |
+        make -f Makefile.libretro platform=${{ steps.core.outputs.platform }} -j$(getconf _NPROCESSORS_ONLN)
+
+    - name: Upload artifacts
+      if: ${{ success() }}
+      uses: actions/upload-artifact@v3
+      with:
+        name: 20408_libretro_${{ steps.core.outputs.platform }}-${{ steps.core.outputs.sha8 }}
+        path: 2048_libretro_${{ steps.core.outputs.platform }}.a
