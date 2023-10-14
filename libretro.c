@@ -1,4 +1,5 @@
 #include "game.h"
+#include "game_shared.h"
 
 #include <stdint.h>
 #include <string.h>
@@ -21,6 +22,11 @@ static retro_audio_sample_batch_t audio_batch_cb;
 retro_environment_t environ_cb;
 static retro_input_poll_t input_poll_cb;
 static retro_input_state_t input_state_cb;
+static int16_t swipe_start_x = 0;
+static int16_t swipe_start_y = 0;
+static int16_t swipe_end_x = 0;
+static int16_t swipe_end_y = 0;
+static bool prev_pressed = false;
 
 #define SAVE_FILE_NAME "2048.srm"
 
@@ -368,6 +374,50 @@ void retro_run(void)
    ks.left   = (ret & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT));
    ks.start  = (ret & (1 << RETRO_DEVICE_ID_JOYPAD_START));
    ks.select = (ret & (1 << RETRO_DEVICE_ID_JOYPAD_SELECT));
+
+   if (input_state_cb(0, RETRO_DEVICE_POINTER, 0, RETRO_DEVICE_ID_POINTER_PRESSED))
+   {
+      if (!prev_pressed)
+      {
+         swipe_start_x = input_state_cb(0, RETRO_DEVICE_POINTER, 0, RETRO_DEVICE_ID_POINTER_X);
+         swipe_start_y = input_state_cb(0, RETRO_DEVICE_POINTER, 0, RETRO_DEVICE_ID_POINTER_Y);
+         prev_pressed = true;
+      }
+      else
+      {
+         swipe_end_x = input_state_cb(0, RETRO_DEVICE_POINTER, 0, RETRO_DEVICE_ID_POINTER_X);
+         swipe_end_y = input_state_cb(0, RETRO_DEVICE_POINTER, 0, RETRO_DEVICE_ID_POINTER_Y);
+      }
+   }
+   else if (prev_pressed)
+   {
+      bool swipeLeft = false;
+      bool swipeRight = false;
+      bool swipeUp = false;
+      bool swipeDown = false;
+      game_state_t curr_state = game_get_state();
+      prev_pressed = false;
+      if (curr_state == STATE_TITLE || curr_state == STATE_GAME_OVER || curr_state == STATE_WON)
+      {
+         /* Approximation of button location translated to fronted pointer pos */
+         if (swipe_end_x > -21846 && swipe_end_x < 21846 && swipe_end_y > 10923 && swipe_end_y < 21846) ks.start=1;
+      }
+      int16_t threshold = 3276*2; /* 32768 / 5 */
+      if (swipe_end_x > swipe_start_x && swipe_end_x - swipe_start_x > threshold) swipeRight = true;
+      if (swipe_end_x < swipe_start_x && swipe_start_x - swipe_end_x > threshold) swipeLeft = true;
+      if (swipe_end_y > swipe_start_y && swipe_end_y - swipe_start_y > threshold) swipeDown = true;
+      if (swipe_end_y < swipe_start_y && swipe_start_y - swipe_end_y > threshold) swipeUp = true;
+      if (!swipeLeft && !swipeRight)
+      {
+         if (swipeUp) ks.up = 1;
+         if (swipeDown) ks.down = 1;
+      }
+      if (!swipeUp && !swipeDown)
+      {
+         if (swipeRight) ks.right = 1;
+         if (swipeLeft) ks.left = 1;
+      }
+   }
 
    game_update(frame_time, &ks);
    game_render();
