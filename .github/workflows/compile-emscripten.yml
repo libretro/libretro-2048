@@ -13,5 +13,5 @@ jobs:
 
       - name: Run build
         run: |
-          sudo apt update -y && apt install make -y
+          sudo apt update -y && sudo apt install make -y
           ./easy-compile-ubuntu
