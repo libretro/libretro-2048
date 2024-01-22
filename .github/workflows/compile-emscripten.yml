@@ -13,6 +13,6 @@ jobs:
 
       - name: Run build
         run: |
-          /bin/bash -c
+          chsh -s /bin/bash $USER
           echo $SHELL
           make -f Makefile.emscripten install-emsdk build-core
