@@ -14,4 +14,4 @@ build-core:
 	cd RetroArch && \
 	sed -i "s/-s DISABLE_DEPRECATED_FIND_EVENT_TARGET_BEHAVIOR=1/-s DISABLE_DEPRECATED_FIND_EVENT_TARGET_BEHAVIOR=1 -sGL_ENABLE_GET_PROC_ADDRESS/g" Makefile.emscripten && \
 	/tmp/emsdk/upstream/emscripten/emmake make -f Makefile.emscripten LIBRETRO=2028 -j all && \
-	find . -type f \( -name "*.js" -o -name "*.wasm" \)
+	ls -lha 2028_libretro.*
