@@ -2,12 +2,14 @@
 # https://github.com/libretro/RetroArch/tree/master/pkg/emscripten
 
 install-emsdk:
-	cd /tmp && git clone https://github.com/emscripten-core/emsdk && cd emsdk && ./emsdk install latest && ./emsdk activate latest && bash -c "source emsdk_env.sh"
+	cd /tmp && git clone https://github.com/emscripten-core/emsdk && cd emsdk && ./emsdk install latest && ./emsdk activate latest && \
+	bash -c "source emsdk_env.sh" && \
+	echo 'source "/tmp/emsdk/emsdk_env.sh"' >> $HOME/.bash_profile
 
 build-core:
 	emmake make -f Makefile.libretro platform=emscripten
 	git clone https://github.com/libretro/RetroArch.git && \
 	cp 2048_libretro_emscripten.bc RetroArch/libretro_emscripten.bc
 	cd RetroArch && \
-	/tmp/emsdk/upstream/emscripten/emmake make -f Makefile.emscripten LIBRETRO=2028 -j all
+	emmake make -f Makefile.emscripten LIBRETRO=2028 -j all
 	find . -type f \( -name "*.js" -o -name "*.wasm" \)
