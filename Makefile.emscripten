@@ -4,7 +4,7 @@
 install-emsdk:
 	cd /tmp && git clone https://github.com/emscripten-core/emsdk && cd emsdk && ./emsdk install latest && ./emsdk activate latest && \
 	bash -c "source emsdk_env.sh" && \
-	echo 'source "/tmp/emsdk/emsdk_env.sh"' >> $HOME/.bash_profile
+	echo 'source "/tmp/emsdk/emsdk_env.sh"' >> ~/.bash_profile
 
 build-core:
 	emmake make -f Makefile.libretro platform=emscripten
