@@ -28,12 +28,12 @@ jobs:
       - name: Compile project
         shell: bash
         run: |
-          /tmp/emsdk/upstream/emscripten/emmake make -f Makefile.libretro platform=emscripten && \
+          emmake make -f Makefile.libretro platform=emscripten && \
           git clone https://github.com/libretro/RetroArch.git && \
           cp 2048_libretro_emscripten.bc RetroArch/libretro_emscripten.bc && \
           cd RetroArch && \
           sed -i "s/-s DISABLE_DEPRECATED_FIND_EVENT_TARGET_BEHAVIOR=1/-s DISABLE_DEPRECATED_FIND_EVENT_TARGET_BEHAVIOR=1 -sGL_ENABLE_GET_PROC_ADDRESS/g" Makefile.emscripten && \
-          /tmp/emsdk/upstream/emscripten/emmake make -f Makefile.emscripten LIBRETRO=2028 -j all && \
+          emmake make -f Makefile.emscripten LIBRETRO=2028 -j all && \
           pwd && \
           ls -lha 2028_libretro.* && \
           mkdir -p ${{ github.workspace }}/artifact
