@@ -7,10 +7,9 @@ install-emsdk:
 	echo 'source "/tmp/emsdk/emsdk_env.sh"' >> ~/.bash_profile
 
 build-core:
-	bash -c "source ~/.bash_profile" && \
-	emmake make -f Makefile.libretro platform=emscripten && \
+	/tmp/emsdk/upstream/emscripten/emmake make -f Makefile.libretro platform=emscripten && \
 	git clone https://github.com/libretro/RetroArch.git && \
 	cp 2048_libretro_emscripten.bc RetroArch/libretro_emscripten.bc && \
 	cd RetroArch && \
-	emmake make -f Makefile.emscripten LIBRETRO=2028 -j all && \
+	/tmp/emsdk/upstream/emscripten/emmake make -f Makefile.emscripten LIBRETRO=2028 -j all && \
 	find . -type f \( -name "*.js" -o -name "*.wasm" \)
