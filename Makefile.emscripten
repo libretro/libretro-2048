@@ -1,8 +1,9 @@
 # https://github.com/emscripten-core/emsdk
 # https://github.com/libretro/RetroArch/tree/master/pkg/emscripten
+EMSDK_VERSION=3.1.51
 
 install-emsdk:
-	cd /tmp && git clone https://github.com/emscripten-core/emsdk && cd emsdk && ./emsdk install latest && ./emsdk activate latest && \
+	cd /tmp && git clone https://github.com/emscripten-core/emsdk && cd emsdk && ./emsdk install ${EMSDK_VERSION} && ./emsdk activate ${EMSDK_VERSION} && \
 	bash -c "source emsdk_env.sh" && \
 	echo 'source "/tmp/emsdk/emsdk_env.sh"' >> ~/.bash_profile
 
