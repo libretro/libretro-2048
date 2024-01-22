@@ -1,0 +1,17 @@
+name: empscripten build
+
+on:
+  push
+
+jobs:
+  build:
+    name: Compile
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Run build
+        run: |
+          apt update -y && apt install make -y
+          ./easy-compile-ubuntu
