@@ -7,13 +7,11 @@ jobs:
   build:
     name: Compile
     runs-on: ubuntu-latest
-    defaults:
-        run:
-          shell: bash
     steps:
       - name: Check out code
         uses: actions/checkout@v4
 
       - name: Run build
+        shell: bash
         run: |
           make -f Makefile.emscripten install-emsdk build-core
