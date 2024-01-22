@@ -43,4 +43,4 @@ jobs:
         with:
           name: 2048_libretro_emscripten
           path: |
-            RetroArch/2048_libretro.*
+            **/2048_libretro.*
