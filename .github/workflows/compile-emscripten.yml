@@ -13,5 +13,4 @@ jobs:
 
       - name: Run build
         run: |
-          sudo apt update -y && sudo apt install make -y
-          ./easy-compile-ubuntu
+          make -f Makefile.emscripten install-emsdk build-core
