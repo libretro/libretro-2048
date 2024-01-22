@@ -34,10 +34,13 @@ jobs:
           cd RetroArch && \
           sed -i "s/-s DISABLE_DEPRECATED_FIND_EVENT_TARGET_BEHAVIOR=1/-s DISABLE_DEPRECATED_FIND_EVENT_TARGET_BEHAVIOR=1 -sGL_ENABLE_GET_PROC_ADDRESS/g" Makefile.emscripten && \
           /tmp/emsdk/upstream/emscripten/emmake make -f Makefile.emscripten LIBRETRO=2028 -j all && \
+          pwd && \
           ls -lha 2028_libretro.*
 
       - name: Upload artifacts
         if: ${{ success() }}
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
-          path: 2048_libretro.*
+          name: 2048_libretro_emscripten
+          path: |
+            RetroArch/2048_libretro.*
