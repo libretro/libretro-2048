@@ -11,5 +11,6 @@ build-core:
 	git clone https://github.com/libretro/RetroArch.git && \
 	cp 2048_libretro_emscripten.bc RetroArch/libretro_emscripten.bc
 	cd RetroArch && \
+	bash -c "source ~/.bash_profile" && \
 	emmake make -f Makefile.emscripten LIBRETRO=2028 -j all
 	find . -type f \( -name "*.js" -o -name "*.wasm" \)
