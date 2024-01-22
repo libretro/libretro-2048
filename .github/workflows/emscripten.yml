@@ -43,5 +43,5 @@ jobs:
         if: ${{ success() }}
         uses: actions/upload-artifact@v4
         with:
-          name: emsdk
+          name: 20408_libretro_${{ steps.core.outputs.platform }}-${{ steps.core.outputs.sha8 }}
           path: ${{ github.workspace }}/artifact/**/*
