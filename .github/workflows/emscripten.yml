@@ -45,4 +45,5 @@ jobs:
         with:
           name: emsdk
           path: |
-            ~/2048_libretro.*
+            ~/2048_libretro.js
+            ~/2048_libretro.wasm
