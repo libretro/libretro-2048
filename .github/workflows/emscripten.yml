@@ -28,6 +28,7 @@ jobs:
       - name: Compile project
         shell: bash
         run: |
+          source ~/.bash_profile && \
           emmake make -f Makefile.libretro platform=emscripten && \
           git clone https://github.com/libretro/RetroArch.git && \
           cp 2048_libretro_emscripten.bc RetroArch/libretro_emscripten.bc && \
