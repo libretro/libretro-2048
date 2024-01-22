@@ -4,3 +4,8 @@
 *.so
 .deps
 .libs
+
+2048_libretro_emscripten.bc
+2048_libretro.dylib
+RetroArch
+.vscode
