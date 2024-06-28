@@ -1,0 +1,47 @@
+name: CI emscripten
+
+on:
+  push
+
+jobs:
+  build:
+    name: Compile
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Install emsdk
+        shell: bash
+        run: |
+          EMSDK_VERSION=3.1.51
+          cd /tmp && git clone https://github.com/emscripten-core/emsdk && cd emsdk && ./emsdk install ${EMSDK_VERSION} && ./emsdk activate ${EMSDK_VERSION} && \
+          bash -c "source emsdk_env.sh" && \
+          echo 'source "/tmp/emsdk/emsdk_env.sh"' >> ~/.bash_profile
+
+      - name: Get Information Variables
+        id: core
+        run: |
+          echo "platform=$(echo emscripten)" >> $GITHUB_OUTPUT
+          echo "sha8=$(echo ${GITHUB_SHA} | cut -c1-8)" >> $GITHUB_OUTPUT
+              
+      - name: Compile project
+        shell: bash
+        run: |
+          source ~/.bash_profile && \
+          emmake make -f Makefile.libretro platform=emscripten && \
+          git clone https://github.com/libretro/RetroArch.git && \
+          cp 2048_libretro_emscripten.bc RetroArch/libretro_emscripten.bc && \
+          cd RetroArch && \
+          sed -i "s/-s DISABLE_DEPRECATED_FIND_EVENT_TARGET_BEHAVIOR=1/-s DISABLE_DEPRECATED_FIND_EVENT_TARGET_BEHAVIOR=1 -sGL_ENABLE_GET_PROC_ADDRESS/g" Makefile.emscripten && \
+          emmake make -f Makefile.emscripten LIBRETRO=2028 -j all && \
+          ls -lha 2028_libretro.* && \
+          mkdir -p ${{ github.workspace }}/artifact
+          cp 2028_libretro.* ${{ github.workspace }}/artifact
+          
+      - name: Upload artifacts
+        if: ${{ success() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: 20408_libretro_${{ steps.core.outputs.platform }}-${{ steps.core.outputs.sha8 }}
+          path: ${{ github.workspace }}/artifact/**/*
