@@ -273,7 +273,7 @@ void retro_set_environment(retro_environment_t cb)
    
    static const struct retro_variable vars[] = {
       { "2048_theme", "Theme (restart); Light|Dark" },
-      { "2048_fps", "Framerate (restart); 60|120|240" },
+      { "2048_fps", "Framerate (restart); 60|72|75|90|100|119|120|144|155|160|165|180|200|240|244|300|320|360|480|540" },
       { NULL, NULL },
    };
 
