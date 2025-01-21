@@ -1,4 +1,5 @@
 STATIC_LINKING=0
+WANT_CAIRO := 0
 
 # platform
 ifeq ($(platform),)
@@ -413,7 +414,7 @@ WindowsSDKLibDir := $(shell cygpath -w "$(WindowsSdkDir)\Lib\x64")
 
 INCFLAGS_PLATFORM = -I"$(WindowsSdkDirInc)"
 export INCLUDE := $(INCLUDE);$(WindowsSDKIncludeDir);$(WindowsSDKGlIncludeDir)
-export LIB := $(LIB);$(WindowsSDKLibDir)
+export LIB := $(LIB);$(WindowsSdkDir)
 
 TARGET := $(TARGET_NAME)_libretro.dll
 PSS_STYLE :=2
@@ -437,7 +438,7 @@ WindowsSDKLibDir := $(shell cygpath -w "$(WindowsSdkDir)\Lib")
 
 INCFLAGS_PLATFORM = -I"$(WindowsSdkDirInc)"
 export INCLUDE := $(INCLUDE);$(WindowsSDKIncludeDir);$(WindowsSDKGlIncludeDir)
-export LIB := $(LIB);$(WindowsSDKLibDir)
+export LIB := $(LIB);$(WindowsSdkDir)
 TARGET := $(TARGET_NAME)_libretro.dll
 PSS_STYLE :=2
 LDFLAGS += -DLL
@@ -666,6 +667,10 @@ ${LIBRARY_NAME}_FILES = $(SOURCES_C)
 include $(THEOS_MAKE_PATH)/library.mk
 else
 all: $(TARGET)
+
+ifneq (0,$(WANT_CAIRO))
+include Makefile.cairo
+endif
 
 $(TARGET): $(OBJECTS) 
 ifeq ($(STATIC_LINKING), 1)
