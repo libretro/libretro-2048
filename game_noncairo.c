@@ -9,6 +9,10 @@
 #include <time.h>
 #include <assert.h>
 
+extern bool libretro_supports_sw_fb;
+extern bool libretro_sw_fb_checked;
+extern void log_2048(enum retro_log_level level, const char *format, ...);
+
 int SCREEN_PITCH = 0;
 
 static unsigned int color_lut[13];
@@ -377,7 +381,7 @@ void game_init(void)
 
 void game_deinit(void)
 {
-   if (frame_buf)
+   if (frame_buf && !libretro_supports_sw_fb)
       free(frame_buf);
    frame_buf = NULL;
 }
@@ -581,6 +585,41 @@ int game_init_pixelformat(void)
 
 void game_render(void)
 {
+   if (!libretro_sw_fb_checked)
+   {
+      struct retro_framebuffer fb = {0};
+
+      fb.width   = SCREEN_WIDTH;
+      fb.height  = SCREEN_HEIGHT;
+      fb.access_flags = RETRO_MEMORY_ACCESS_WRITE;
+
+      if (environ_cb(RETRO_ENVIRONMENT_GET_CURRENT_SOFTWARE_FRAMEBUFFER, &fb)
+            && fb.data)
+      {
+         libretro_supports_sw_fb = true;
+         log_2048(RETRO_LOG_INFO,
+               "Using frontend software framebuffer.\n");
+      }
+
+      libretro_sw_fb_checked = true;
+   }
+
+   if (libretro_supports_sw_fb)
+   {
+      struct retro_framebuffer fb = {0};
+
+      fb.width   = SCREEN_WIDTH;
+      fb.height  = SCREEN_HEIGHT;
+      fb.access_flags = RETRO_MEMORY_ACCESS_WRITE;
+
+      if (environ_cb(RETRO_ENVIRONMENT_GET_CURRENT_SOFTWARE_FRAMEBUFFER, &fb)
+            && fb.data)
+      {
+         frame_buf = (unsigned *)fb.data;
+         SCREEN_PITCH = (int)fb.pitch;
+      }
+   }
+
    init_static_surface();
 
    render_game();

@@ -35,6 +35,8 @@ static bool block_sram_write   = false;
 static void *game_data_scratch = NULL;
 
 static bool libretro_supports_bitmasks = false;
+bool libretro_supports_sw_fb    = false;
+bool libretro_sw_fb_checked     = false;
 
 static struct retro_frame_time_callback frame_cb;
 
@@ -166,6 +168,8 @@ void retro_init(void)
    game_data_scratch = malloc(game_data_size());
 
    libretro_supports_bitmasks = false;
+   libretro_supports_sw_fb    = false;
+   libretro_sw_fb_checked     = false;
    if (environ_cb(RETRO_ENVIRONMENT_GET_INPUT_BITMASKS, NULL))
       libretro_supports_bitmasks = true;
 
@@ -196,6 +200,8 @@ void retro_deinit(void)
    game_data_scratch = NULL;
 
    libretro_supports_bitmasks = false;
+   libretro_supports_sw_fb    = false;
+   libretro_sw_fb_checked     = false;
 }
 
 unsigned retro_api_version(void)
