@@ -11,11 +11,11 @@ jobs:
     runs-on: ubuntu-latest
     container: orbisdev/orbisdev:latest
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
 
     - name: Install dependencies
       run: |
-        apk add ncurses-dev make bash python2 libstdc++
+        apk add ncurses-dev make bash python3 libstdc++
     
     - name: Get Information Variables
       id: core
@@ -29,7 +29,7 @@ jobs:
 
     - name: Upload artifacts
       if: ${{ success() }}
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: 20408_libretro_${{ steps.core.outputs.platform }}-${{ steps.core.outputs.sha8 }}
         path: 2048_libretro_${{ steps.core.outputs.platform }}.a

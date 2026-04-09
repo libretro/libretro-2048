@@ -14,7 +14,7 @@ jobs:
       - name: Install emsdk
         shell: bash
         run: |
-          EMSDK_VERSION=3.1.51
+          EMSDK_VERSION=4.0.8
           cd /tmp && git clone https://github.com/emscripten-core/emsdk && cd emsdk && ./emsdk install ${EMSDK_VERSION} && ./emsdk activate ${EMSDK_VERSION} && \
           bash -c "source emsdk_env.sh" && \
           echo 'source "/tmp/emsdk/emsdk_env.sh"' >> ~/.bash_profile
@@ -30,10 +30,12 @@ jobs:
         run: |
           source ~/.bash_profile && \
           emmake make -f Makefile.libretro platform=emscripten && \
+          RETROARCH_VERSION=v1.21.0 && \
           git clone https://github.com/libretro/RetroArch.git && \
+          (cd RetroArch && git checkout $RETROARCH_VERSION) && \
           cp 2048_libretro_emscripten.bc RetroArch/libretro_emscripten.bc && \
           cd RetroArch && \
-          sed -i "s/-s DISABLE_DEPRECATED_FIND_EVENT_TARGET_BEHAVIOR=1/-s DISABLE_DEPRECATED_FIND_EVENT_TARGET_BEHAVIOR=1 -sGL_ENABLE_GET_PROC_ADDRESS/g" Makefile.emscripten && \
+          sed -i "s/-s DISABLE_DEPRECATED_FIND_EVENT_TARGET_BEHAVIOR=0/-s DISABLE_DEPRECATED_FIND_EVENT_TARGET_BEHAVIOR=0 -sGL_ENABLE_GET_PROC_ADDRESS=1/g" Makefile.emscripten && \
           emmake make -f Makefile.emscripten LIBRETRO=2028 -j all && \
           ls -lha 2028_libretro.* && \
           mkdir -p ${{ github.workspace }}/artifact
