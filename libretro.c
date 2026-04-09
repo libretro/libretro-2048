@@ -34,9 +34,6 @@ static bool use_sram_file      = false;
 static bool block_sram_write   = false;
 static void *game_data_scratch = NULL;
 
-static bool have_software_fb   = false;
-static bool software_fb_checked = false;
-
 static bool libretro_supports_bitmasks = false;
 
 static struct retro_frame_time_callback frame_cb;
@@ -161,14 +158,12 @@ void retro_init(void)
 {
    struct retro_log_callback logging;
 
-   frame_time          = 0;
-   first_run           = true;
-   sram_accessed       = false;
-   use_sram_file       = false;
-   block_sram_write    = false;
-   have_software_fb    = false;
-   software_fb_checked = false;
-   game_data_scratch   = malloc(game_data_size());
+   frame_time        = 0;
+   first_run         = true;
+   sram_accessed     = false;
+   use_sram_file     = false;
+   block_sram_write  = false;
+   game_data_scratch = malloc(game_data_size());
 
    libretro_supports_bitmasks = false;
    if (environ_cb(RETRO_ENVIRONMENT_GET_INPUT_BITMASKS, NULL))
@@ -190,12 +185,10 @@ void retro_deinit(void)
 
    game_deinit();
 
-   frame_time          = 0;
-   first_run           = true;
-   sram_accessed       = false;
-   use_sram_file       = false;
-   have_software_fb    = false;
-   software_fb_checked = false;
+   frame_time        = 0;
+   first_run         = true;
+   sram_accessed     = false;
+   use_sram_file     = false;
 
    block_sram_write = false;
    if (game_data_scratch)
@@ -352,22 +345,6 @@ void retro_run(void)
       check_variables();
 
       first_run = false;
-   }
-
-   if (!software_fb_checked)
-   {
-      struct retro_framebuffer fb = {0};
-      fb.width   = SCREEN_WIDTH;
-      fb.height  = SCREEN_HEIGHT;
-      fb.access_flags = RETRO_MEMORY_ACCESS_WRITE;
-
-      if (environ_cb(RETRO_ENVIRONMENT_GET_CURRENT_SOFTWARE_FRAMEBUFFER, &fb))
-      {
-         have_software_fb = true;
-         log_2048(RETRO_LOG_INFO, "Software framebuffer acquired.\n");
-      }
-
-      software_fb_checked = true;
    }
 
    input_poll_cb();
