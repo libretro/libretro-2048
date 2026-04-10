@@ -409,7 +409,10 @@ void handle_input(key_state_t *ks)
       if (!ks->start && game.old_ks.start)
          change_state(game.state == STATE_WON ? STATE_TITLE : STATE_PLAYING);
       else if (game.state == STATE_WON && !ks->select && game.old_ks.select)
+      {
          change_state(STATE_PLAYING);
+         add_tile();
+      }
    }
    else if (game.state == STATE_PLAYING)
    {
