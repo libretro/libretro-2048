@@ -147,6 +147,8 @@ void start_game(void)
       }
    }
 
+   game.won_before = false;
+
    /* reset +score animation */
    delta_score      = 0;
    delta_score_time = 1;
@@ -294,8 +296,11 @@ static bool move_tiles(void)
             game.score += 2 << next->value;
             moved = true;
 
-            if (next->value == 11)
-               game.state = STATE_WON;
+            if (next->value == 11 && !game.won_before)
+            {
+               game.won_before = true;
+               change_state(STATE_WON);
+            }
          }
          else if (farthest != cell)
          {
@@ -386,7 +391,7 @@ void change_state(game_state_t state)
          break;
       case STATE_WON:
          end_game();
-         assert(state == STATE_TITLE);
+         assert(state == STATE_TITLE || state == STATE_PLAYING);
          break;
       case STATE_PAUSED:
          assert(state == STATE_PLAYING || state == STATE_TITLE);
@@ -403,6 +408,11 @@ void handle_input(key_state_t *ks)
    {
       if (!ks->start && game.old_ks.start)
          change_state(game.state == STATE_WON ? STATE_TITLE : STATE_PLAYING);
+      else if (game.state == STATE_WON && !ks->select && game.old_ks.select)
+      {
+         change_state(STATE_PLAYING);
+         add_tile();
+      }
    }
    else if (game.state == STATE_PLAYING)
    {
