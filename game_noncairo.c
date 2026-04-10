@@ -15,15 +15,16 @@ extern void log_2048(enum retro_log_level level, const char *format, ...);
 
 int SCREEN_PITCH = 0;
 
-static unsigned int color_lut[13];
-static unsigned int color_lut_dark[13];
-static const char* label_lut[13] =
+static unsigned int color_lut[18];
+static unsigned int color_lut_dark[18];
+static const char* label_lut[18] =
 {
    "",
    "2", "4", "8", "16",
    "32", "64", "128", "256",
    "512", "1024", "2048",
-   "XXX"
+   "4096", "8192", "16384",
+   "32768", "65536", "131072"
 };
 
 /* LAME DRAW TEXT and FILLRECT */
@@ -248,7 +249,8 @@ static void draw_tile(int ctx, cell_t *cell)
 
    if (cell->value)
    {
-      nullctx_fontsize(3);
+      int label_len = strlen(label_lut[cell->value]);
+      nullctx_fontsize(label_len <= 3 ? 3 : 2);
 
       if (dark_theme)
          set_rgb(ctx, 200, 200, 200);
@@ -281,6 +283,11 @@ static void init_luts(void)
    color_lut_dark[10] = RGB32(100,58,192,255);
    color_lut_dark[11] = RGB32(130,61,209,255);
    color_lut_dark[12] = RGB32(150,85,205,255);
+   color_lut_dark[13] = RGB32(35,165,85,255);
+   color_lut_dark[14] = RGB32(20,155,155,255);
+   color_lut_dark[15] = RGB32(195,160,20,255);
+   color_lut_dark[16] = RGB32(210,95,20,255);
+   color_lut_dark[17] = RGB32(215,40,40,255);
 
    color_lut[0] = RGB32(238,228,218,90);
    color_lut[1] = RGB32(238,228,218,255);
@@ -297,7 +304,12 @@ static void init_luts(void)
    color_lut[9] = RGB32(237,200,80,255);
    color_lut[10] = RGB32(237,197,63,255);
    color_lut[11] = RGB32(237,194,46,255);
-   color_lut[12] = RGB32(60,58,50,255);
+   color_lut[12] = RGB32(91,164,229,255);
+   color_lut[13] = RGB32(61,196,61,255);
+   color_lut[14] = RGB32(168,85,247,255);
+   color_lut[15] = RGB32(239,68,68,255);
+   color_lut[16] = RGB32(249,115,22,255);
+   color_lut[17] = RGB32(234,179,8,255);
 }
 
 static void init_static_surface(void)
@@ -514,16 +526,38 @@ void render_win_or_game_over(void)
    sprintf(tmp, "Score: %i", game_get_score());
    draw_text_centered(ctx, tmp, 0, 0, SCREEN_WIDTH, TILE_SIZE*5);
 
-   if (dark_theme)
-      set_rgb(ctx, 70, 83, 96);
+   if (state == STATE_WON)
+   {
+      int bw = SCREEN_HEIGHT - TILE_SIZE * 2;
+      int bh = FONT_SIZE * 3;
+      int bx = TILE_SIZE / 2;
+      int by = TILE_SIZE * 4;
+
+      if (dark_theme)
+         set_rgb(ctx, 70, 83, 96);
+      else
+         set_rgb(ctx, 185, 172, 159);
+      fill_rectangle(ctx, bx, by, bw, bh);
+      fill_rectangle(ctx, bx, by + bh + SPACING, bw, bh);
+
+      nullctx.color = dark_theme ? color_lut_dark[1] : color_lut[1];
+      draw_text_centered(ctx, "START: MENU", bx + SPACING, by + SPACING,
+                         bw - SPACING * 2, bh - SPACING * 2);
+      draw_text_centered(ctx, "SELECT: KEEP GOING", bx + SPACING, by + bh + SPACING * 2,
+                         bw - SPACING * 2, bh - SPACING * 2);
+   }
    else
-      set_rgb(ctx, 185, 172, 159);
-   fill_rectangle(ctx, TILE_SIZE / 2, TILE_SIZE * 4, SCREEN_HEIGHT - TILE_SIZE * 2, FONT_SIZE * 3);
+   {
+      if (dark_theme)
+         set_rgb(ctx, 70, 83, 96);
+      else
+         set_rgb(ctx, 185, 172, 159);
+      fill_rectangle(ctx, TILE_SIZE / 2, TILE_SIZE * 4, SCREEN_HEIGHT - TILE_SIZE * 2, FONT_SIZE * 3);
 
-   nullctx.color = dark_theme ? color_lut_dark[1] : color_lut[1];
-
-   draw_text_centered(ctx, "PRESS START", TILE_SIZE / 2 + SPACING, TILE_SIZE * 4 + SPACING,
-                      SCREEN_HEIGHT - TILE_SIZE * 2 - SPACING * 2, FONT_SIZE * 3 - SPACING * 2);
+      nullctx.color = dark_theme ? color_lut_dark[1] : color_lut[1];
+      draw_text_centered(ctx, "PRESS START", TILE_SIZE / 2 + SPACING, TILE_SIZE * 4 + SPACING,
+                         SCREEN_HEIGHT - TILE_SIZE * 2 - SPACING * 2, FONT_SIZE * 3 - SPACING * 2);
+   }
 }
 
 void render_paused(void)
