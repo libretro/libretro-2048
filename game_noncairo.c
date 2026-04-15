@@ -189,7 +189,7 @@ static void draw_text_centered(int ctx, const char *utf8, int x, int y, int w, i
 
    char *ptr=(char*)frame_buf;
    int size=strlen(utf8);
-   int foy=h?(8*nullctx.fontsize_y)/2 + h/2:8*nullctx.fontsize_y;
+   int foy=h ? (h - 8*nullctx.fontsize_y + 1) / 2 : 0;
    int fox=w?w/2 -(size*7*nullctx.fontsize_y)/2:0;
 
    Draw_text(ptr,x+fox,y+foy,nullctx.color,0 ,nullctx.fontsize_x,nullctx.fontsize_y ,size, utf8);
