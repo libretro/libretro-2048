@@ -386,11 +386,14 @@ void change_state(game_state_t state)
          break;
       case STATE_PLAYING:
          assert(state == STATE_GAME_OVER || state == STATE_WON || state == STATE_PAUSED);
-         if (state != STATE_PAUSED)
+         /* Only save best score on actual game over, not when reaching 2048 */
+         if (state == STATE_GAME_OVER)
             end_game();
          break;
       case STATE_WON:
-         end_game();
+         /* Only save best score when returning to menu, not when continuing */
+         if (state == STATE_TITLE)
+            end_game();
          assert(state == STATE_TITLE || state == STATE_PLAYING);
          break;
       case STATE_PAUSED:
