@@ -12,6 +12,9 @@ static int delta_score;
 static float delta_score_time;
 static float frame_time = 0.016;
 
+/* Last direction used during multi-button alternation */
+static direction_t last_alt_dir = DIR_NONE;
+
 #define PI 3.14159
 
 /* out back bicubic
@@ -152,6 +155,7 @@ void start_game(void)
    /* reset +score animation */
    delta_score      = 0;
    delta_score_time = 1;
+   last_alt_dir     = DIR_NONE;
 
    add_tile();
    add_tile();
@@ -416,15 +420,49 @@ void handle_input(key_state_t *ks)
    }
    else if (game.state == STATE_PLAYING)
    {
-      if (ks->up && !game.old_ks.up)
-         game.direction = DIR_UP;
-      else if (ks->right && !game.old_ks.right)
-         game.direction = DIR_RIGHT;
-      else if (ks->down && !game.old_ks.down)
-         game.direction = DIR_DOWN;
-      else if (ks->left && !game.old_ks.left)
-         game.direction = DIR_LEFT;
-      else if (ks->start && !game.old_ks.start)
+      direction_t held_dirs[4];
+      int held_count = 0;
+      int i;
+
+      if (ks->up)    held_dirs[held_count++] = DIR_UP;
+      if (ks->right) held_dirs[held_count++] = DIR_RIGHT;
+      if (ks->down)  held_dirs[held_count++] = DIR_DOWN;
+      if (ks->left)  held_dirs[held_count++] = DIR_LEFT;
+
+      if (held_count == 1)
+      {
+         /* Single direction: trigger on new press only */
+         if (ks->up && !game.old_ks.up)
+            game.direction = DIR_UP;
+         else if (ks->right && !game.old_ks.right)
+            game.direction = DIR_RIGHT;
+         else if (ks->down && !game.old_ks.down)
+            game.direction = DIR_DOWN;
+         else if (ks->left && !game.old_ks.left)
+            game.direction = DIR_LEFT;
+         last_alt_dir = held_dirs[0];
+      }
+      else if (held_count >= 2)
+      {
+         /* Multiple directions held: alternate between them each frame */
+         int next_idx = 0;
+         for (i = 0; i < held_count; i++)
+         {
+            if (held_dirs[i] == last_alt_dir)
+            {
+               next_idx = (i + 1) % held_count;
+               break;
+            }
+         }
+         game.direction = held_dirs[next_idx];
+         last_alt_dir = held_dirs[next_idx];
+      }
+      else
+      {
+         last_alt_dir = DIR_NONE;
+      }
+
+      if (ks->start && !game.old_ks.start)
          change_state(STATE_PAUSED);
    }
    else if (game.state == STATE_PAUSED)
