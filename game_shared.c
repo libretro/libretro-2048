@@ -363,6 +363,12 @@ int game_get_best_score(void)
 {
    return game.best_score;
 }
+
+bool game_get_auto_diagonals(void)
+{
+   return game.auto_diagonals;
+}
+
 cell_t * game_get_grid(void)
 {
    return game.grid;
@@ -417,6 +423,9 @@ void handle_input(key_state_t *ks)
          change_state(STATE_PLAYING);
          add_tile();
       }
+      else if (game.state == STATE_TITLE &&
+               ((ks->left && !game.old_ks.left) || (ks->right && !game.old_ks.right)))
+         game.auto_diagonals = !game.auto_diagonals;
    }
    else if (game.state == STATE_PLAYING)
    {
@@ -442,7 +451,7 @@ void handle_input(key_state_t *ks)
             game.direction = DIR_LEFT;
          last_alt_dir = held_dirs[0];
       }
-      else if (held_count >= 2)
+      else if (held_count >= 2 && game.auto_diagonals)
       {
          /* Multiple directions held: alternate between them each frame */
          int next_idx = 0;

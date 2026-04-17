@@ -76,6 +76,8 @@ typedef struct game {
    key_state_t old_ks;
    direction_t direction;
    cell_t grid[GRID_SIZE];
+
+   bool auto_diagonals; /* alternate inputs when two directions held simultaneously */
 } game_t;
 
 extern retro_environment_t environ_cb;
