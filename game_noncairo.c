@@ -479,17 +479,30 @@ void render_title(void)
    draw_text_centered(ctx, "2048", 0, 0, SCREEN_WIDTH, TILE_SIZE*3);
 
 
-   if (dark_theme)
-      set_rgb(ctx, 70, 83, 96);
-   else
-      set_rgb(ctx, 185, 172, 159);
-   fill_rectangle(ctx, TILE_SIZE / 2, TILE_SIZE * 4, SCREEN_HEIGHT - TILE_SIZE * 2, FONT_SIZE * 3);
+   {
+      int bw = SCREEN_HEIGHT - TILE_SIZE * 2;
+      int bh = FONT_SIZE * 3;
+      int bx = TILE_SIZE / 2;
+      int by = TILE_SIZE * 4;
+      char diag_label[32];
 
-   nullctx_fontsize(1);
-   nullctx.color = dark_theme ? color_lut_dark[1] : color_lut[1];
+      if (dark_theme) set_rgb(ctx, 70, 83, 96);
+      else            set_rgb(ctx, 185, 172, 159);
+      fill_rectangle(ctx, bx, by, bw, bh);
+      fill_rectangle(ctx, bx, by + bh + SPACING, bw, bh);
 
-   draw_text_centered(ctx, "PRESS START", TILE_SIZE / 2 + SPACING, TILE_SIZE * 4 + SPACING,
-                      SCREEN_HEIGHT - TILE_SIZE * 2 - SPACING * 2, FONT_SIZE * 3 - SPACING * 2);
+      sprintf(diag_label, "< AUTO DIAGONALS: %s >",
+              game_get_auto_diagonals() ? "ON" : "OFF");
+
+      nullctx_fontsize(1);
+      nullctx.color = dark_theme ? color_lut_dark[1] : color_lut[1];
+      draw_text_centered(ctx, "PRESS START",
+                         bx + SPACING, by + SPACING,
+                         bw - SPACING * 2, bh - SPACING * 2);
+      draw_text_centered(ctx, diag_label,
+                         bx + SPACING, by + bh + SPACING * 2,
+                         bw - SPACING * 2, bh - SPACING * 2);
+   }
 
 }
 
