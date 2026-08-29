@@ -19,6 +19,7 @@ void handle_input(key_state_t *ks);
 int game_get_score(void);
 int game_get_best_score(void);
 cell_t * game_get_grid(void);
+bool game_get_auto_diagonals(void);
 int *game_get_delta_score(void);
 float *game_get_delta_score_time(void);
 float *game_get_frame_time(void);
